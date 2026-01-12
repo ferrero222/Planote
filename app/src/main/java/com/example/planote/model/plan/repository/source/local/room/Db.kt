@@ -12,19 +12,19 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
-import com.example.planote.model.plan.repository.source.local.room.entity.PlanWeek
-import com.example.planote.model.plan.repository.source.local.room.entity.PlanWeekDay
-import com.example.planote.model.plan.repository.source.local.room.entity.PlanWeekDayTask
-import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarDay
-import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarDayTask
-import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarMonth
-import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarMonthTask
-import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarYear
-import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarYearTask
 import com.example.planote.model.plan.repository.source.local.room.dao.PlanCalendarDaysDao
 import com.example.planote.model.plan.repository.source.local.room.dao.PlanCalendarMonthsDao
 import com.example.planote.model.plan.repository.source.local.room.dao.PlanCalendarYearsDao
 import com.example.planote.model.plan.repository.source.local.room.dao.PlanWeekDao
+import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarDayEntity
+import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarDayTaskEntity
+import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarMonthEntity
+import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarMonthTaskEntity
+import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarYearEntity
+import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarYearTaskEntity
+import com.example.planote.model.plan.repository.source.local.room.entity.PlanWeek
+import com.example.planote.model.plan.repository.source.local.room.entity.PlanWeekDay
+import com.example.planote.model.plan.repository.source.local.room.entity.PlanWeekDayTask
 import java.time.LocalDate
 
 /*****************************************************************
@@ -59,9 +59,9 @@ class Converters {
  * Class for DB hold
  ***************************************************************/
 @Database(
-    entities = [PlanCalendarDay::class, PlanCalendarDayTask::class,
-                PlanCalendarMonth::class, PlanCalendarMonthTask::class,
-                PlanCalendarYear::class, PlanCalendarYearTask::class,
+    entities = [PlanCalendarDayEntity::class, PlanCalendarDayTaskEntity::class,
+                PlanCalendarMonthEntity::class, PlanCalendarMonthTaskEntity::class,
+                PlanCalendarYearEntity::class, PlanCalendarYearTaskEntity::class,
                 PlanWeek::class, PlanWeekDay::class, PlanWeekDayTask::class],
     version = 1,
     exportSchema = false

@@ -31,11 +31,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
+import com.example.planote.view.note.NotesPage
 import com.example.planote.view.plan.PlannerPage
 import com.example.planote.view.server.ServerPage
 import com.example.planote.view.settings.SettingsPage
 import com.example.planote.view.statistic.StatisticsPage
-import com.example.planote.view.note.NotesPage
 import kotlin.math.abs
 
 /*****************************************************************

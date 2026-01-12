@@ -3,16 +3,17 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
+    alias(libs.plugins.compose.compiler)
 }
 
 android {
     namespace = "com.example.planote"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.planote"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -46,7 +47,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.13"
+        kotlinCompilerExtensionVersion = "1.5.15"
     }
 
     packaging {
@@ -62,11 +63,15 @@ dependencies {
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose.android)
+    implementation(libs.androidx.foundation.android)
+    implementation(libs.places)
     ksp(libs.androidx.room.compiler)
 
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.ksp.compiler)
+    implementation(libs.hilt.navigation.compose)
 
     // AndroidX Core
     implementation(libs.androidx.core.ktx)
@@ -90,4 +95,7 @@ dependencies {
     // Debug
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    // Calendar
+    implementation(libs.kizitonwose.calendar)
 }

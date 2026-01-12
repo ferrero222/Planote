@@ -8,11 +8,11 @@ package com.example.planote.model.plan.repository
 /*****************************************************************
  * Imported packages
  ****************************************************************/
-import kotlinx.coroutines.flow.Flow
 import com.example.planote.model.plan.repository.source.local.room.dao.PlanWeekDao
 import com.example.planote.model.plan.repository.source.local.room.entity.PlanWeek
 import com.example.planote.model.plan.repository.source.local.room.entity.PlanWeekDay
 import com.example.planote.model.plan.repository.source.local.room.entity.PlanWeekDayTask
+import kotlinx.coroutines.flow.Flow
 
 /*****************************************************************
  * Classes

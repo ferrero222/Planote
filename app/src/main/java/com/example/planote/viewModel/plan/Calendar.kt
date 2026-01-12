@@ -13,41 +13,51 @@ import androidx.lifecycle.viewModelScope
 import com.example.planote.model.plan.repository.PlanCalendarDaysRepository
 import com.example.planote.model.plan.repository.PlanCalendarMonthsRepository
 import com.example.planote.model.plan.repository.PlanCalendarYearsRepository
-import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarDay
-import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarDayTask
-import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarMonth
-import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarMonthTask
-import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarYear
-import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarYearTask
+import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarDayEntity
+import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarDayTaskEntity
+import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarMonthEntity
+import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarMonthTaskEntity
+import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarYearEntity
+import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarYearTaskEntity
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
 import java.time.LocalDate
 import javax.inject.Inject
 
 /*****************************************************************
  * Data
  ****************************************************************/
-/*****************************************************************
+/**
+ * Domains
+ **/
+data class PlanCalendarDay(val id: Long, val title: String?, val date: LocalDate)
+data class PlanCalendarMonth(val id: Long, val title: String?, val date: LocalDate)
+data class PlanCalendarYear(val id: Long, val title: String?, val date: LocalDate)
+data class PlanCalendarDayTask(val id: Long, val ownerId: Long, val title: String, val description: String? = null, val isDone: Boolean = false)
+data class PlanCalendarMonthTask(val id: Long, val ownerId: Long, val title: String, val description: String? = null, val isDone: Boolean = false)
+data class PlanCalendarYearTask(val id: Long, val ownerId: Long, val title: String, val description: String? = null, val isDone: Boolean = false)
+
+/**
  * Instance of calendar state
- ****************************************************************/
+ **/
 data class PlanCalendarDataHolder(
     val days: List<PlanCalendarDay> = emptyList(),
     val months: List<PlanCalendarMonth> = emptyList(),
     val years: List<PlanCalendarYear> = emptyList(),
-    val selectedDayTasks: List<PlanCalendarDayTask> = emptyList(),
-    val selectedMonthTasks: List<PlanCalendarMonthTask> = emptyList(),
-    val selectedYearTasks: List<PlanCalendarYearTask> = emptyList(),
     val isLoading: Boolean = false,
+    val currentViewType: CalendarViewType = CalendarViewType.DAYS,
     val error: String? = null
 )
+
+/**
+ * Enum
+ **/
+enum class CalendarViewType { DAYS, MONTHS, YEARS }
 
 /*****************************************************************
  * Interfaces
@@ -58,6 +68,12 @@ data class PlanCalendarDataHolder(
  ****************************************************************/
 interface PlanCalendarImplements {
     fun getCurrentDateImpl() : LocalDate
+    fun getDays(year: Int, month: Int): List<PlanCalendarDay>
+    fun getMonths(year: Int): List<PlanCalendarMonth>
+    fun getYears(): List<PlanCalendarYear>
+    fun getDayTasks(day: PlanCalendarDay): List<PlanCalendarDayTask>
+    fun getMonthTasks(month: PlanCalendarMonth): List<PlanCalendarMonthTask>
+    fun getYearsTasks(year: PlanCalendarYear): List<PlanCalendarYearTask>
     fun updateDay(day: PlanCalendarDay)
     fun updateMonth(month: PlanCalendarMonth)
     fun updateYear(year: PlanCalendarYear)
@@ -70,7 +86,7 @@ interface PlanCalendarImplements {
     fun deleteDayTask(day: PlanCalendarDay, task: PlanCalendarDayTask)
     fun deleteMonthTask(month: PlanCalendarMonth, task: PlanCalendarMonthTask)
     fun deleteYearTask(year: PlanCalendarYear, task: PlanCalendarYearTask)
-    fun getTasksById(bdId: Long)
+    fun setViewType(viewType: CalendarViewType)
 }
 
 /*****************************************************************
@@ -91,7 +107,6 @@ class PlanCalendarViewModel @Inject constructor(
     /** val for calendar data state **/
     private val _dataState = MutableStateFlow(PlanCalendarDataHolder())
     /** val for bdId state for gettin tasks **/
-    private val _taskState = MutableStateFlow<(Long?)>(null)
     /** val for getting current date **/
     private val currentDate: LocalDate
         get() = LocalDate.now()
@@ -107,20 +122,19 @@ class PlanCalendarViewModel @Inject constructor(
      *************************************************************/
     init {
         dataStateHandler()
-        taskStateHandler()
     }
 
     /*************************************************************
     * Private functions
     *************************************************************/
-    /*************************************************************
+    /**
      * Subscribe function to calendar data. Each time when
      * entity of data base will be changed this function will be
      * called and change the state of calendar data with new
      * changed data from database
-     * @param None
+     * @param
      * @return None
-     ************************************************************/
+     **/
     private fun dataStateHandler() {
         viewModelScope.launch {
             combine(
@@ -132,9 +146,9 @@ class PlanCalendarViewModel @Inject constructor(
             }.collect { (days, months, years) ->
                 _dataState.update { state ->
                     state.copy(
-                        days = days,
-                        months = months,
-                        years = years,
+                        days = days.map{entity -> entity.toDomain()},
+                        months = months.map{entity -> entity.toDomain()},
+                        years = years.map{entity -> entity.toDomain()},
                         isLoading = false
                     )
                 }
@@ -142,72 +156,74 @@ class PlanCalendarViewModel @Inject constructor(
         }
     }
 
-    /*************************************************************
-     * Function to get tasks for entities in reactive way. We
-     * subscribe to bdId state @_planCalendarTaskState and if it
-     * will be changed it will resubscribe to tasks entities and
-     * get them for new bsId state in _planCalendarDataState state
-     * @param None
+    /**
+     * domain entity convertors
+     * @param
      * @return None
-     ************************************************************/
-    @kotlinx.coroutines.ExperimentalCoroutinesApi
-    private fun taskStateHandler() {
-         viewModelScope.launch {
-             _taskState
-                 .filterNotNull()
-                 .flatMapLatest { bdId ->
-                     combine(
-                         daysRepository.getTasksForDay(bdId),
-                         monthsRepository.getTasksForMonth(bdId),
-                         yearsRepository.getTasksForYear(bdId)
-                     ) { dayTasks, monthTasks, yearTasks ->
-                         Triple(dayTasks, monthTasks, yearTasks)
-                     }
-                 }
-                 .collect { (dayTasks, monthTasks, yearTasks) ->
-                     _dataState.update { it.copy(
-                         selectedDayTasks = dayTasks,
-                         selectedMonthTasks = monthTasks,
-                         selectedYearTasks = yearTasks,
-                         isLoading = false
-                     ) }
-                 }
-         }
-    }
+     **/
+    private fun PlanCalendarDayEntity.toDomain() = PlanCalendarDay(this.bdId, this.title, this.date)
+    private fun PlanCalendarMonthEntity.toDomain() = PlanCalendarMonth(this.bdId, this.title, this.date)
+    private fun PlanCalendarYearEntity.toDomain() = PlanCalendarYear(this.bdId, this.title, this.date)
+    private fun PlanCalendarDayTaskEntity.toDomain() = PlanCalendarDayTask(this.bdId, this.ownerId, this.title, this.description, this.isDone)
+    private fun PlanCalendarMonthTaskEntity.toDomain() = PlanCalendarMonthTask(this.bdId, this.ownerId, this.title, this.description, this.isDone)
+    private fun PlanCalendarYearTaskEntity.toDomain() = PlanCalendarYearTask(this.bdId, this.ownerId, this.title, this.description, this.isDone)
 
-    /*************************************************************
-     *
-     * @param None
+    private fun PlanCalendarDay.toEntity() = PlanCalendarDayEntity(this.id, this.title, this.date)
+    private fun PlanCalendarMonth.toEntity() = PlanCalendarMonthEntity(this.id, this.title, this.date)
+    private fun PlanCalendarYear.toEntity() = PlanCalendarYearEntity(this.id, this.title, this.date)
+    private fun PlanCalendarDayTask.toEntity() = PlanCalendarDayTaskEntity(this.id, this.ownerId, this.title, this.description, this.isDone)
+    private fun PlanCalendarMonthTask.toEntity() = PlanCalendarMonthTaskEntity(this.id, this.ownerId, this.title, this.description, this.isDone)
+    private fun PlanCalendarYearTask.toEntity() = PlanCalendarYearTaskEntity(this.id, this.ownerId, this.title, this.description, this.isDone)
+
+    /**
+     * @param
      * @return None
-     ************************************************************/
-    private fun clearError() {
-        _dataState.update { it.copy(error = null) }
-    }
+     **/
+    private fun clearError() = _dataState.update { it.copy(error = null) }
+
+    private fun PlanCalendarDay.exist(): Boolean   = _dataState.value.days.contains(this)
+    private fun PlanCalendarMonth.exist(): Boolean = _dataState.value.months.contains(this)
+    private fun PlanCalendarYear.exist(): Boolean  = _dataState.value.years.contains(this)
+
+    private fun PlanCalendarDayTask.exist(day: PlanCalendarDay): Boolean       = daysRepository.getTasksForDay(day.id).map{entity -> entity.toDomain()}.contains(this)
+    private fun PlanCalendarMonthTask.exist(month: PlanCalendarMonth): Boolean = monthsRepository.getTasksForMonth(month.id).map{entity -> entity.toDomain()}.contains(this)
+    private fun PlanCalendarYearTask.exist(year: PlanCalendarYear): Boolean    = yearsRepository.getTasksForYear(year.id).map{entity -> entity.toDomain()}.contains(this)
+
+    private fun PlanCalendarDay.isEmpty(): Boolean   = this.title.isNullOrBlank() && (daysRepository.getTasksForDay(this.id).isEmpty())
+    private fun PlanCalendarMonth.isEmpty(): Boolean = this.title.isNullOrBlank() && (monthsRepository.getTasksForMonth(this.id).isEmpty())
+    private fun PlanCalendarYear.isEmpty(): Boolean  = this.title.isNullOrBlank() && (yearsRepository.getTasksForYear(this.id).isEmpty())
 
     /*************************************************************
      * Public functions
      *************************************************************/
-    /*************************************************************
-     *
-     * @param None
+    /**
+     * @param
      * @return None
-     ************************************************************/
+     **/
+    override fun setViewType(viewType: CalendarViewType) = _dataState.update { it.copy(currentViewType = viewType) }
     override fun getCurrentDateImpl(): LocalDate = currentDate
 
-    /*************************************************************
-     *
-     * @param None
+    override fun getDays(year: Int, month: Int): List<PlanCalendarDay> = dataState.value.days
+    override fun getMonths(year: Int): List<PlanCalendarMonth>         = dataState.value.months
+    override fun getYears(): List<PlanCalendarYear>                    = dataState.value.years
+
+    override fun getDayTasks(day: PlanCalendarDay): List<PlanCalendarDayTask>         = daysRepository.getTasksForDay(day.id).map{entity -> entity.toDomain()}
+    override fun getMonthTasks(month: PlanCalendarMonth): List<PlanCalendarMonthTask> = monthsRepository.getTasksForMonth(month.id).map{entity -> entity.toDomain()}
+    override fun getYearsTasks(year: PlanCalendarYear): List<PlanCalendarYearTask>    = yearsRepository.getTasksForYear(year.id).map{entity -> entity.toDomain()}
+
+    /**
+     * @param
      * @return None
-     ************************************************************/
+     **/
     override fun updateDay(day: PlanCalendarDay) {
         viewModelScope.launch {
             try {
-                if (day.isNew) {
-                    daysRepository.insertDay(day)
+                if (day.exist()) {
+                    if(day.isEmpty()) deleteDay(day)
+                    else daysRepository.updateDay(day.toEntity())
                 }
                 else {
-                    if(day.isEmpty()) deleteDay(day)
-                    else daysRepository.updateDay(day)
+                    daysRepository.insertDay(day.toEntity())
                 }
             } catch (e: Exception) {
                 _dataState.update { it.copy(error = "DB: Day adding error: ${e.message}") }
@@ -217,12 +233,12 @@ class PlanCalendarViewModel @Inject constructor(
     override fun updateMonth(month: PlanCalendarMonth) {
         viewModelScope.launch {
             try {
-                if (month.isNew) {
-                    monthsRepository.insertMonth(month)
+                if (month.exist()) {
+                    if(month.isEmpty()) deleteMonth(month)
+                    else monthsRepository.updateMonth(month.toEntity())
                 }
                 else {
-                    if(month.isEmpty()) deleteMonth(month)
-                    else monthsRepository.updateMonth(month)
+                    monthsRepository.insertMonth(month.toEntity())
                 }
             } catch (e: Exception) {
                 _dataState.update { it.copy(error = "DB: Month adding error: ${e.message}") }
@@ -232,12 +248,12 @@ class PlanCalendarViewModel @Inject constructor(
     override fun updateYear(year: PlanCalendarYear) {
         viewModelScope.launch {
             try {
-                if (year.isNew) {
-                    yearsRepository.insertYear(year)
+                if (year.exist()) {
+                    if(year.isEmpty()) deleteYear(year)
+                    else yearsRepository.updateYear(year.toEntity())
                 }
                 else {
-                    if(year.isEmpty()) deleteYear(year)
-                    else yearsRepository.updateYear(year)
+                    yearsRepository.insertYear(year.toEntity())
                 }
             } catch (e: Exception) {
                 _dataState.update { it.copy(error = "DB: Year adding error: ${e.message}") }
@@ -245,18 +261,16 @@ class PlanCalendarViewModel @Inject constructor(
         }
     }
 
-    /*************************************************************
-     *
-     * @param None
+    /**
+     * @param
      * @return None
-     ************************************************************/
+     **/
     override fun updateDayTask(day: PlanCalendarDay, task: PlanCalendarDayTask) {
         viewModelScope.launch {
             try {
-                if (day.isNew) daysRepository.insertDay(day)
-                else           daysRepository.updateDay(day)
-                if (task.isNew) daysRepository.insertDayTask(task)
-                else            daysRepository.updateDayTask(task)
+                if (!day.exist())    daysRepository.insertDay(day.toEntity())
+                if (task.exist(day)) daysRepository.updateDayTask(task.toEntity())
+                else                 daysRepository.insertDayTask(task.toEntity())
             } catch (e: Exception) {
                 _dataState.update { it.copy(error = "DB: Day adding task error: ${e.message}") }
             }
@@ -265,10 +279,9 @@ class PlanCalendarViewModel @Inject constructor(
     override fun updateMonthTask(month: PlanCalendarMonth, task: PlanCalendarMonthTask) {
         viewModelScope.launch {
             try {
-                if (month.isNew) monthsRepository.insertMonth(month)
-                else             monthsRepository.updateMonth(month)
-                if (task.isNew) monthsRepository.insertMonthTask(task)
-                else            monthsRepository.updateMonthTask(task)
+                if (!month.exist())    monthsRepository.insertMonth(month.toEntity())
+                if (task.exist(month)) monthsRepository.updateMonthTask(task.toEntity())
+                else                   monthsRepository.insertMonthTask(task.toEntity())
             } catch (e: Exception) {
                 _dataState.update { it.copy(error = "DB: Year adding task error: ${e.message}") }
             }
@@ -277,25 +290,23 @@ class PlanCalendarViewModel @Inject constructor(
     override fun updateYearTask(year: PlanCalendarYear, task: PlanCalendarYearTask) {
         viewModelScope.launch {
             try {
-                if (year.isNew) yearsRepository.insertYear(year)
-                else            yearsRepository.updateYear(year)
-                if (task.isNew) yearsRepository.insertYearTask(task)
-                else            yearsRepository.updateYearTask(task)
+                if (!year.exist())    yearsRepository.insertYear(year.toEntity())
+                if (task.exist(year)) yearsRepository.updateYearTask(task.toEntity())
+                else                  yearsRepository.insertYearTask(task.toEntity())
             } catch (e: Exception) {
                 _dataState.update { it.copy(error = "DB: Year adding task error: ${e.message}") }
             }
         }
     }
 
-    /*************************************************************
-     *
-     * @param None
+    /**
+     * @param
      * @return None
-     ************************************************************/
+     **/
     override fun deleteDay(day: PlanCalendarDay) {
         viewModelScope.launch {
             try {
-                if(!day.isNew) daysRepository.deleteDay(day)
+                if(day.exist()) daysRepository.deleteDay(day.toEntity())
             } catch (e: Exception) {
                 _dataState.update { it.copy(error = "DB: Day deleting error: ${e.message}") }
             }
@@ -304,7 +315,7 @@ class PlanCalendarViewModel @Inject constructor(
     override fun deleteMonth(month: PlanCalendarMonth) {
         viewModelScope.launch {
             try {
-                if(!month.isNew) monthsRepository.deleteMonth(month)
+                if(month.exist()) monthsRepository.deleteMonth(month.toEntity())
             } catch (e: Exception) {
                 _dataState.update { it.copy(error = "DB: Month deleting error: ${e.message}") }
             }
@@ -313,22 +324,21 @@ class PlanCalendarViewModel @Inject constructor(
     override fun deleteYear(year: PlanCalendarYear) {
         viewModelScope.launch {
             try {
-                if(!year.isNew) yearsRepository.deleteYear(year)
+                if(year.exist()) yearsRepository.deleteYear(year.toEntity())
             } catch (e: Exception) {
                 _dataState.update { it.copy(error = "DB: Year deleting error: ${e.message}") }
             }
         }
     }
 
-    /*************************************************************
-     *
-     * @param None
+    /**
+     * @param
      * @return None
-     ************************************************************/
+     **/
     override fun deleteDayTask(day: PlanCalendarDay, task: PlanCalendarDayTask) {
         viewModelScope.launch {
             try {
-                if(!day.isNew && !task.isNew) daysRepository.deleteDayTask(task)
+                if(day.exist() && task.exist(day)) daysRepository.deleteDayTask(task.toEntity())
             } catch (e: Exception) {
                 _dataState.update { it.copy(error = "DB: Day deleting task error: ${e.message}") }
             }
@@ -337,7 +347,7 @@ class PlanCalendarViewModel @Inject constructor(
     override fun deleteMonthTask(month: PlanCalendarMonth, task: PlanCalendarMonthTask) {
         viewModelScope.launch {
             try {
-                if(!month.isNew && !task.isNew) monthsRepository.deleteMonthTask(task)
+                if(month.exist() && !task.exist(month)) monthsRepository.deleteMonthTask(task.toEntity())
             } catch (e: Exception) {
                 _dataState.update { it.copy(error = "DB: Month deleting task error: ${e.message}") }
             }
@@ -346,21 +356,13 @@ class PlanCalendarViewModel @Inject constructor(
     override fun deleteYearTask(year: PlanCalendarYear, task: PlanCalendarYearTask) {
         viewModelScope.launch {
             try {
-                if(!year.isNew && !task.isNew) yearsRepository.deleteYearTask(task)
+                if(year.exist() && task.exist(year)) yearsRepository.deleteYearTask(task.toEntity())
             } catch (e: Exception) {
                 _dataState.update { it.copy(error = "DB: Year deleting task error: ${e.message}") }
             }
         }
     }
 
-    /*************************************************************
-     *
-     * @param None
-     * @return None
-     ************************************************************/
-    override fun getTasksById(bdId: Long) {
-        _taskState.value = bdId
-    }
 }
 /*****************************************************************
  * End of class

@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 fun WeekBlock() {
     CustomBlock(
         title = "Еженедельный",
+        settingsExist = true,
         onSettingsClick = { }
     ) {
         Text(
