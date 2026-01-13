@@ -14,14 +14,20 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -38,7 +44,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.planote.view.plan.CustomBlock
 import com.example.planote.viewModel.plan.CalendarViewType
 import com.example.planote.viewModel.plan.PlanCalendarViewModel
 import com.kizitonwose.calendar.compose.HorizontalCalendar
@@ -58,10 +63,11 @@ import java.util.Locale
  ****************************************************************/
 @Composable
 fun CalendarBlock(viewModel: PlanCalendarViewModel = hiltViewModel()) {
-    CustomBlock(
-        title = "",
-        settingsExist = true,
-        onSettingsClick = {}
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         val dataState by viewModel.dataState.collectAsStateWithLifecycle()
         Column {
@@ -71,17 +77,12 @@ fun CalendarBlock(viewModel: PlanCalendarViewModel = hiltViewModel()) {
                     onViewTypeChanged = { viewModel.setViewType(it) }
                 )
             }
-            CalendarContentView(viewModel, dataState.currentViewType)
+            when (dataState.currentViewType) {
+                CalendarViewType.DAYS -> DaysCalendar(viewModel)
+                CalendarViewType.MONTHS -> MonthsCalendar(viewModel)
+                CalendarViewType.YEARS -> YearsCalendar(viewModel)
+            }
         }
-    }
-}
-
-@Composable
-private fun CalendarContentView(viewModel: PlanCalendarViewModel, viewType: CalendarViewType) {
-    when (viewType) {
-        CalendarViewType.DAYS -> DaysCalendar(viewModel)
-        CalendarViewType.MONTHS -> MonthsCalendar(viewModel)
-        CalendarViewType.YEARS -> YearsCalendar(viewModel)
     }
 }
 

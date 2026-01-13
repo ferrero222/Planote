@@ -24,6 +24,11 @@ import com.example.planote.view.plan.component.WeekBlock
 @Composable
 fun PlannerPage() {
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+
+
+
+
+
         TodayBlock()
         WeekBlock()
         CalendarBlock()
