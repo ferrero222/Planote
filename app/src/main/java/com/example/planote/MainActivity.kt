@@ -25,26 +25,26 @@ import dagger.hilt.android.AndroidEntryPoint
  * Global variables
  ************************************************************/
 private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF00BCD4),
+    primary = Color(0xFF66CCFF),
     onPrimary = Color.Black,
-    primaryContainer = Color(0xFF00364A), // необязательно, но полезно для Material 3
+    primaryContainer = Color(0xFF00364A),
     onPrimaryContainer = Color(0xFF97F0FF),
-    secondary = Color(0xFF03DAC6),
-    onSecondary = Color.Black,
+    secondary = Color(0xFFF76B6E),
+    onSecondary = Color.White,
     secondaryContainer = Color(0xFF00514A),
     onSecondaryContainer = Color(0xFF8CFFE9),
     background = Color(0xFF121212),
-    onBackground = Color(0xFFE0E0E0), // чуть мягче, чем чисто белый
+    onBackground = Color(0xFFE0E0E0),
     surface = Color(0xFF1E1E1E),
-    onSurface = Color(0xFFE0E0E0), // тоже мягкий белый для лучшей читаемости
-    surfaceVariant = Color(0xFF303030), // если используете Material 3
+    onSurface = Color(0xFFE0E0E0),
+    surfaceVariant = Color(0xFF303030),
     onSurfaceVariant = Color(0xFFB0B0B0),
     outline = Color(0xFF707070)
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF6200EE),
-    secondary = Color(0xFF03DAC6),
+    primary = Color(0xFF66CCFF),
+    secondary = Color(0xFFF76B6E),
     background = Color.White,
     surface = Color(0xFFFFFFFF),
     onPrimary = Color.White,

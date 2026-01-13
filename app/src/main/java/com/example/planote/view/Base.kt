@@ -35,14 +35,13 @@ import com.example.planote.view.note.NotesPage
 import com.example.planote.view.plan.PlannerPage
 import com.example.planote.view.server.ServerPage
 import com.example.planote.view.settings.SettingsPage
-import com.example.planote.view.statistic.StatisticsPage
 import kotlin.math.abs
 
 /*****************************************************************
  * Enums
  ****************************************************************/
 enum class Page {
-    Planner, Notes, Statistics, Settings, Server
+    Planner, Notes, Settings, Server
 }
 
 /*****************************************************************
@@ -117,7 +116,6 @@ private fun PageContent(screen: Page, modifier: Modifier = Modifier) {
         when (screen) {
             Page.Planner -> PlannerPage()
             Page.Notes -> NotesPage()
-            Page.Statistics -> StatisticsPage()
             Page.Settings -> SettingsPage()
             Page.Server -> ServerPage()
         }

@@ -9,7 +9,6 @@ package com.example.planote.view.plan.component
  * Imported packages
  ****************************************************************/
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,18 +21,18 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -45,6 +44,8 @@ import com.example.planote.viewModel.plan.PlanCalendarViewModel
 import com.kizitonwose.calendar.compose.HorizontalCalendar
 import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.CalendarDay
+import com.kizitonwose.calendar.core.DayPosition
+import com.kizitonwose.calendar.core.daysOfWeek
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.Month
@@ -58,7 +59,7 @@ import java.util.Locale
 @Composable
 fun CalendarBlock(viewModel: PlanCalendarViewModel = hiltViewModel()) {
     CustomBlock(
-        title = "Календарь",
+        title = "",
         settingsExist = true,
         onSettingsClick = {}
     ) {
@@ -92,7 +93,9 @@ private fun CalendarTypeSelector(currentViewType: CalendarViewType, onViewTypeCh
             SegmentedButton(
                 shape = SegmentedButtonDefaults.itemShape(index = viewType.ordinal, count = CalendarViewType.entries.size),
                 onClick = { onViewTypeChanged(viewType) },
-                selected = currentViewType == viewType
+                selected = currentViewType == viewType,
+                colors = SegmentedButtonDefaults.colors(activeContainerColor = colorScheme.primary),
+                icon = { SegmentedButtonDefaults.Icon(active = false) }
             ) {
                 Text(
                     text = when (viewType) {
@@ -111,6 +114,7 @@ private fun DaysCalendar(viewModel: PlanCalendarViewModel) {
     val currentDate = LocalDate.now()
     val startMonth = YearMonth.now().minusMonths(100)
     val endMonth = YearMonth.now().plusMonths(100)
+    val daysOfWeek = remember { daysOfWeek() }
     val calendarState = rememberCalendarState(
         startMonth = startMonth,
         endMonth = endMonth,
@@ -121,20 +125,34 @@ private fun DaysCalendar(viewModel: PlanCalendarViewModel) {
     HorizontalCalendar(
         state = calendarState,
         monthHeader = { month ->
-            Text(
-                text = "${month.yearMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${month.yearMonth.year}",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 12.dp),
-                textAlign = TextAlign.Center
-            )
+//            Text(
+//                text = "${"Календарь"} ${month.yearMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${month.yearMonth.year}",
+//                fontSize = 20.sp,
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .padding(vertical = 12.dp),
+//                textAlign = TextAlign.Center
+//            )
+            DaysOfWeekTitle(daysOfWeek)
         },
         dayContent = { day ->
             CalendarDayItem(day, currentDate)
         }
     )
+}
+
+@Composable
+fun DaysOfWeekTitle(daysOfWeek: List<DayOfWeek>) {
+    Row(modifier = Modifier.fillMaxWidth()) {
+        for (dayOfWeek in daysOfWeek) {
+            Text(
+                modifier = Modifier.weight(1f),
+                color = colorScheme.onSecondary.copy(alpha = 0.3f),
+                textAlign = TextAlign.Center,
+                text = dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault()),
+            )
+        }
+    }
 }
 
 @Composable
@@ -145,15 +163,15 @@ private fun CalendarDayItem(day: CalendarDay, currentDate: LocalDate) {
             .aspectRatio(1f)
             .padding(2.dp)
             .background(
-                color = if (isCurrentDay) Color.Blue else Color.Transparent,
+                color = if (isCurrentDay) colorScheme.primary else Color.Transparent,
                 shape = CircleShape
             ),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = day.date.dayOfMonth.toString(),
-            color = if (isCurrentDay) Color.White else Color.Black,
-            fontSize = 14.sp
+            color = if(day.position == DayPosition.MonthDate) colorScheme.onSecondary else colorScheme.onSecondary.copy(alpha = 0.3f),
+            fontSize = if(isCurrentDay) 18.sp else 14.sp
         )
     }
 }
@@ -162,7 +180,7 @@ private fun CalendarDayItem(day: CalendarDay, currentDate: LocalDate) {
 
 @Composable
 private fun MonthsCalendar(viewModel: PlanCalendarViewModel) {
-    val currentYear = LocalDate.now().year
+    val currentMonth = LocalDate.now().month
     val months = Month.values().toList() // JANUARY to DECEMBER
 
     LazyVerticalGrid(
@@ -174,7 +192,7 @@ private fun MonthsCalendar(viewModel: PlanCalendarViewModel) {
         items(months) { month ->
             MonthItem(
                 month = month,
-                year = currentYear,
+                isSelected = (month == currentMonth),
                 onClick = {
                     // Здесь можно вызвать viewModel.selectMonth(year, month)
                     // Или переключиться обратно в DAYS с выбранным месяцем
@@ -185,19 +203,23 @@ private fun MonthsCalendar(viewModel: PlanCalendarViewModel) {
 }
 
 @Composable
-private fun MonthItem(month: Month, year: Int, onClick: () -> Unit) {
+private fun MonthItem(month: Month, isSelected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .aspectRatio(1.5f)
             .fillMaxWidth()
             .clickable { onClick() }
             .padding(8.dp)
-            .border(1.dp, Color.Gray, RoundedCornerShape(10.dp)),
-        contentAlignment = Alignment.Center
+            .background(
+                color = if(isSelected) colorScheme.primary else Color.Transparent,
+                shape = CircleShape
+            ),
+            contentAlignment = Alignment.Center
     ) {
         Text(
-            text = month.getDisplayName(TextStyle.SHORT, Locale.getDefault()).replaceFirstChar { it.uppercase() },
-            fontSize = 16.sp,
+            text = month.getDisplayName(TextStyle.FULL, Locale.getDefault()).replaceFirstChar { it.uppercase() },
+            fontSize = if(isSelected) 18.sp else 14.sp,
+            color = colorScheme.onSecondary,
             textAlign = TextAlign.Center
         )
     }
@@ -235,16 +257,15 @@ private fun YearItem(year: Int, isSelected: Boolean, onClick: () -> Unit) {
             .clickable { onClick() }
             .padding(8.dp)
             .background(
-                color = if (isSelected) Color.Blue else Color.Transparent,
+                color = if (isSelected) colorScheme.primary else Color.Transparent,
                 shape = CircleShape
-            )
-            .border(1.dp, if (isSelected) Color.Blue else Color.Gray, RoundedCornerShape(10.dp)),
-        contentAlignment = Alignment.Center
+            ),
+            contentAlignment = Alignment.Center
     ) {
         Text(
             text = year.toString(),
-            color = if (isSelected) Color.White else Color.Black,
-            fontSize = 16.sp,
+            color = colorScheme.onSecondary,
+            fontSize = if(isSelected) 18.sp else 14.sp,
             textAlign = TextAlign.Center
         )
     }
