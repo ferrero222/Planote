@@ -13,7 +13,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -21,6 +20,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -130,48 +130,50 @@ private fun CenteredPageIndicator(
     currentPage: Int,
     modifier: Modifier = Modifier
 ) {
-    Row(
+    Box(
         modifier = modifier
-            .height(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .background(
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                shape = RoundedCornerShape(16.dp)
+            )
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center
     ) {
-        repeat(pageSizeof) { index ->
-            val curPageOffset = pagerState.currentPageOffsetFraction
-            val targetPage = currentPage + curPageOffset
-            val distance = calculateCyclicDistance(
-                currentIndex = index.toFloat(),
-                targetIndex = targetPage,
-                totalPages = pageSizeof
-            )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            repeat(pageSizeof) { index ->
+                val curPageOffset = pagerState.currentPageOffsetFraction
+                val targetPage = currentPage + curPageOffset
+                val distance = calculateCyclicDistance(
+                    currentIndex = index.toFloat(),
+                    targetIndex = targetPage,
+                    totalPages = pageSizeof
+                )
 
-            // Убираем анимацию и вычисляем значения напрямую
-            val dotSize = when {
-                distance < 0.1f -> 12.dp
-                distance <= 1.0f -> {
-                    val progress = 1f - distance
-                    lerp(6.dp, 12.dp, progress)
+                val dotSize = when {
+                    distance < 0.1f -> 12.dp
+                    distance <= 1.0f -> lerp(6.dp, 12.dp, 1f - distance)
+                    else -> 6.dp
                 }
-                else -> 6.dp
-            }
 
-            val dotColor = when {
-                distance < 0.1f -> MaterialTheme.colorScheme.primary
-                distance <= 1.0f -> {
-                    val progress = 1f - distance
-                    val primaryColor = MaterialTheme.colorScheme.primary
-                    val inactiveColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
-                    lerp(inactiveColor, primaryColor, progress)
+                val dotColor = when {
+                    distance < 0.1f -> MaterialTheme.colorScheme.primary
+                    distance <= 1.0f -> {
+                        val progress = 1f - distance
+                        val primaryColor = MaterialTheme.colorScheme.primary
+                        val inactiveColor = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f)
+                        lerp(inactiveColor, primaryColor, progress)
+                    }
+                    else -> MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f)
                 }
-                else -> MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
-            }
 
-            Box(
-                modifier = Modifier
-                    .padding(horizontal = 4.dp)
-                    .size(dotSize)
-                    .clip(CircleShape)
-                    .background(dotColor)
-            )
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 4.dp)
+                        .size(dotSize)
+                        .clip(CircleShape)
+                        .background(dotColor)
+                )
+            }
         }
     }
 }
