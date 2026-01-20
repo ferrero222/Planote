@@ -28,10 +28,9 @@ fun PlannerPage() {
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        item { CalendarBlock() }
         item { TodayBlock() }
-        item { CalendarBlock() }
         item { WeekBlock() }
         item { CalendarBlock() }
+
     }
 }

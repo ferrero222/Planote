@@ -66,6 +66,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose.android)
     implementation(libs.androidx.foundation.android)
     implementation(libs.places)
+    implementation(libs.androidx.compose.material3)
     ksp(libs.androidx.room.compiler)
 
     // Hilt
