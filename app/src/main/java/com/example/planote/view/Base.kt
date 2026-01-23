@@ -38,18 +38,16 @@ import com.example.planote.view.settings.SettingsPage
 import kotlin.math.abs
 
 /*****************************************************************
- * Enums
- ****************************************************************/
-enum class Page {
-    Planner, Notes, Settings, Server
-}
-
-/*****************************************************************
- * Constants
+ * Variables, data, enum
  ****************************************************************/
 private const val MULTIPLIER = 100
 private const val BUFFER_ZONE = 5
 
+enum class Page { Planner, Notes, Settings, Server }
+
+/*****************************************************************
+ * Interfaces
+ ****************************************************************/
 /*****************************************************************
  * Top level functions
  ****************************************************************/
@@ -59,11 +57,7 @@ fun MainScreen() {
     val pages = remember { Page.entries }
     val pagesAmount = pages.size * MULTIPLIER //5*100 = 500
     val initialPage = (pagesAmount / 2) // 500 /2 = 250 (in the middle)
-
-    val pagerState = rememberPagerState(
-        pageCount = { pagesAmount },
-        initialPage = initialPage
-    )
+    val pagerState = rememberPagerState(pageCount = { pagesAmount }, initialPage = initialPage)
 
     LaunchedEffect(pagerState.currentPage) {
         val currentPage = pagerState.currentPage //current from 0 to 500
@@ -82,79 +76,63 @@ fun MainScreen() {
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .statusBarsPadding()
+        modifier = Modifier.fillMaxSize()
+                           .background(MaterialTheme.colorScheme.background)
+                           .statusBarsPadding()
     ) {
         HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxSize()
+            state = pagerState, modifier = Modifier.fillMaxSize()
         ) { page ->
             val actualScreen = pages[page % pages.size] //num of ENUM
-
             PageContent(
-                screen = actualScreen,
-                modifier = Modifier.fillMaxSize()
+                screen = actualScreen, modifier = Modifier.fillMaxSize()
             )
         }
-
         CenteredPageIndicator(
             pageSizeof = pages.size,
             currentPage = pagerState.currentPage % pages.size,
             pagerState = pagerState,
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 32.dp)
+                .align(Alignment.BottomCenter).padding(bottom = 32.dp)
+                .background(color = MaterialTheme.colorScheme.background, shape = RoundedCornerShape(16.dp))
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         )
     }
 }
 
 @Composable
 private fun PageContent(screen: Page, modifier: Modifier = Modifier) {
-    Box(modifier = modifier) {
+    Box(
+        modifier = modifier
+    ) {
         when (screen) {
-            Page.Planner -> PlannerPage()
-            Page.Notes -> NotesPage()
+            Page.Planner  -> PlannerPage()
+            Page.Notes    -> NotesPage()
             Page.Settings -> SettingsPage()
-            Page.Server -> ServerPage()
+            Page.Server   -> ServerPage()
         }
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun CenteredPageIndicator(
-    pagerState: PagerState,
-    pageSizeof: Int,
-    currentPage: Int,
-    modifier: Modifier = Modifier
-) {
+private fun CenteredPageIndicator(pagerState: PagerState, pageSizeof: Int, currentPage: Int, modifier: Modifier = Modifier) {
     Box(
+        contentAlignment = Alignment.Center,
         modifier = modifier
-            .background(
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                shape = RoundedCornerShape(16.dp)
-            )
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        contentAlignment = Alignment.Center
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             repeat(pageSizeof) { index ->
                 val curPageOffset = pagerState.currentPageOffsetFraction
                 val targetPage = currentPage + curPageOffset
-                val distance = calculateCyclicDistance(
-                    currentIndex = index.toFloat(),
-                    targetIndex = targetPage,
-                    totalPages = pageSizeof
-                )
-
+                val distance = calculateCyclicDistance(currentIndex = index.toFloat(), targetIndex = targetPage, totalPages = pageSizeof)
                 val dotSize = when {
                     distance < 0.1f -> 12.dp
                     distance <= 1.0f -> lerp(6.dp, 12.dp, 1f - distance)
                     else -> 6.dp
                 }
-
                 val dotColor = when {
                     distance < 0.1f -> MaterialTheme.colorScheme.primary
                     distance <= 1.0f -> {
@@ -167,23 +145,25 @@ private fun CenteredPageIndicator(
                 }
 
                 Box(
-                    modifier = Modifier
-                        .padding(horizontal = 4.dp)
-                        .size(dotSize)
-                        .clip(CircleShape)
-                        .background(dotColor)
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                                       .size(dotSize)
+                                       .clip(CircleShape)
+                                       .background(dotColor)
                 )
             }
         }
     }
 }
 
-private fun calculateCyclicDistance(
-    currentIndex: Float,
-    targetIndex: Float,
-    totalPages: Int
-): Float {
+private fun calculateCyclicDistance(currentIndex: Float, targetIndex: Float, totalPages: Int): Float {
     val directDistance = abs(currentIndex - targetIndex)
     val cyclicDistance = totalPages - directDistance
     return minOf(directDistance, cyclicDistance)
 }
+
+/*****************************************************************
+ * Classes
+ ****************************************************************/
+/*****************************************************************
+ * Preview
+ ****************************************************************/

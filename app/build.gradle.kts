@@ -99,4 +99,7 @@ dependencies {
 
     // Calendar
     implementation(libs.kizitonwose.calendar)
+
+    // Icons
+    implementation(libs.androidx.compose.material.icons.extended)
 }

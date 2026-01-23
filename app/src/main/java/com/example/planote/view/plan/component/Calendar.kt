@@ -1,5 +1,13 @@
+/*****************************************************************
+ *  Package for main screen with circular pager
+ *  @author Ferrero
+ *  @date 21.08.2025
+ ****************************************************************/
 package com.example.planote.view.plan.component
 
+/*****************************************************************
+ * Imported packages
+ ****************************************************************/
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.fadeIn
@@ -14,20 +22,24 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeight
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarViewDay
+import androidx.compose.material.icons.filled.CalendarViewMonth
+import androidx.compose.material.icons.filled.CalendarViewWeek
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -45,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.planote.view.plan.PlanColorOnSurface
 import com.example.planote.viewModel.plan.CalendarViewType
 import com.example.planote.viewModel.plan.PlanCalendarViewModel
 import com.kizitonwose.calendar.compose.HorizontalCalendar
@@ -59,94 +72,81 @@ import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
 
+/*****************************************************************
+ * Variables, data, enum
+ ****************************************************************/
+/*****************************************************************
+ * Interfaces
+ ****************************************************************/
+/*****************************************************************
+ * Top level functions
+ ****************************************************************/
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun CalendarBlock(viewModel: PlanCalendarViewModel = hiltViewModel()) {
+    Card(
+         shape = RoundedCornerShape(20.dp),
+         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+         modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
+    ) {
+        val dataState by viewModel.dataState.collectAsStateWithLifecycle()
 
-    Column() {
-        Text(
-            modifier = Modifier.padding(12.dp),
-            text = "Календарь",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp),
-            shape = RoundedCornerShape(12.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        Column(
+            modifier = Modifier.padding(top = 25.dp).padding(horizontal = 25.dp)
         ) {
-            val dataState by viewModel.dataState.collectAsStateWithLifecycle()
-
-            Column {
-                Row(
-                    modifier = Modifier
-                        .padding(top = 12.dp)
-                        .padding(horizontal = 20.dp)
-                ) {
-                    CalendarTypeSelector(
-                        currentViewType = dataState.currentViewType,
-                        onViewTypeChanged = { viewModel.setViewType(it) }
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .requiredHeight(440.dp)
-                ) {
-                    AnimatedContent(
-                        targetState = dataState.currentViewType,
-                        label = "CalendarSwitchAnimation",
-                        transitionSpec = {
-                            if (targetState.ordinal > initialState.ordinal) {
-                                (slideInHorizontally { it } + fadeIn()).togetherWith(
-                                    slideOutHorizontally { -it } + fadeOut()
-                                )
-                            } else {
-                                (slideInHorizontally { -it } + fadeIn()).togetherWith(
-                                    slideOutHorizontally { it } + fadeOut()
-                                )
-                            }
-                        }
-                    ) { viewType ->
-                        when (viewType) {
-                            CalendarViewType.DAYS -> DaysCalendar(viewModel)
-                            CalendarViewType.MONTHS -> MonthsCalendar(viewModel)
-                            CalendarViewType.YEARS -> YearsCalendar(viewModel)
+            Row(
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(color = PlanColorOnSurface)
+            ) {
+                CalendarTypeSelector(
+                    currentViewType = dataState.currentViewType, onViewTypeChanged = { viewModel.setViewType(it) }
+                )
+            }
+            Box(
+                modifier = Modifier.padding(top = 15.dp).fillMaxWidth().requiredHeight(400.dp)
+            ) {
+                AnimatedContent(
+                    targetState = dataState.currentViewType, label = "CalendarSwitchAnimation", transitionSpec = {
+                        if (targetState.ordinal > initialState.ordinal) {
+                            (slideInHorizontally { it } + fadeIn()).togetherWith(slideOutHorizontally { -it } + fadeOut())
+                        } else {
+                            (slideInHorizontally { -it } + fadeIn()).togetherWith(slideOutHorizontally { it } + fadeOut())
                         }
                     }
+                ) { viewType ->
+                        when (viewType) {
+                            CalendarViewType.DAYS   -> DaysCalendar(viewModel)
+                            CalendarViewType.MONTHS -> MonthsCalendar(viewModel)
+                            CalendarViewType.YEARS  -> YearsCalendar(viewModel)
+                        }
                 }
             }
         }
     }
 }
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CalendarTypeSelector(
-    currentViewType: CalendarViewType,
-    onViewTypeChanged: (CalendarViewType) -> Unit
-) {
+private fun CalendarTypeSelector(currentViewType: CalendarViewType, onViewTypeChanged: (CalendarViewType) -> Unit, modifier: Modifier = Modifier) {
     SingleChoiceSegmentedButtonRow(
-        modifier = Modifier.fillMaxWidth()
+        modifier = modifier
     ) {
         CalendarViewType.entries.forEach { viewType ->
             SegmentedButton(
-                shape = RoundedCornerShape(15.dp), //
+                shape = RoundedCornerShape(5.dp),
                 onClick = { onViewTypeChanged(viewType) },
                 selected = currentViewType == viewType,
                 colors = SegmentedButtonDefaults.colors(
-                    activeContentColor = MaterialTheme.colorScheme.background,
-                    activeContainerColor = MaterialTheme.colorScheme.primary
+                         activeContentColor = MaterialTheme.colorScheme.background,
+                         activeContainerColor = MaterialTheme.colorScheme.primary,
+                         inactiveContentColor = MaterialTheme.colorScheme.onSurface.copy(0.3f)
                 ),
                 border = BorderStroke(0.dp, Color.Transparent),
-                icon = {}
+                icon = {},
+                modifier = Modifier.padding(horizontal = 10.dp).padding(top = 5.dp).padding(bottom = 5.dp),
             ) {
-                Text(
-                    text = when (viewType) {
+                Text(text = when (viewType) {
                         CalendarViewType.DAYS -> "Дни"
                         CalendarViewType.MONTHS -> "Месяцы"
                         CalendarViewType.YEARS -> "Годы"
@@ -163,28 +163,23 @@ private fun DaysCalendar(viewModel: PlanCalendarViewModel) {
     val startMonth = YearMonth.now().minusMonths(24)
     val endMonth = YearMonth.now().plusMonths(24)
     val daysOfWeek = remember { daysOfWeek() }
-    val calendarState = rememberCalendarState(
-        startMonth = startMonth,
-        endMonth = endMonth,
-        firstVisibleMonth = YearMonth.now(),
-        firstDayOfWeek = DayOfWeek.MONDAY,
-        outDateStyle = OutDateStyle.EndOfGrid
-    )
-
+    val calendarState = rememberCalendarState(startMonth = startMonth,
+                                              endMonth = endMonth,
+                                              firstVisibleMonth = YearMonth.now(),
+                                              firstDayOfWeek = DayOfWeek.MONDAY,
+                                              outDateStyle = OutDateStyle.EndOfGrid)
     HorizontalCalendar(
         state = calendarState,
         monthHeader = { month ->
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 12.dp)
+                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
             ) {
                 daysOfWeek.forEach { dayOfWeek ->
                     Text(
-                        modifier = Modifier.weight(1f),
-                        color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.3f),
-                        textAlign = TextAlign.Center,
-                        text = dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault())
+                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                         textAlign = TextAlign.Center,
+                         text = dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()).uppercase(),
+                         modifier = Modifier.weight(1f)
                     )
                 }
             }
@@ -192,38 +187,45 @@ private fun DaysCalendar(viewModel: PlanCalendarViewModel) {
         dayContent = { day ->
             val isCurrentDay = day.date == currentDate
             Box(
-                modifier = Modifier
-                    .aspectRatio(1f)
-                    .padding(2.dp)
-                    .clip(CircleShape)
-                    .background(
-                        color = if (isCurrentDay) MaterialTheme.colorScheme.primary else Color.Transparent,
-                        shape = CircleShape
-                    )
-                    .clickable { /* TODO */ },
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.aspectRatio(1f)
+                                   .padding(2.dp)
+                                   .clip(CircleShape)
+                                   .background(
+                                       color = if (isCurrentDay) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                       shape = CircleShape
+                                   )
+                                   .clickable { /* TODO */ },
             ) {
                 Text(
                     text = day.date.dayOfMonth.toString(),
                     color = if (day.position == DayPosition.MonthDate) {
-                        if(isCurrentDay) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onSecondary
+                        if(isCurrentDay) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onSurface
                     } else {
-                        MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.3f)
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
                     },
                     fontSize = if (isCurrentDay) 18.sp else if (day.position == DayPosition.MonthDate) 15.sp else 14.sp
                 )
             }
         },
         monthFooter = { month ->
-            Text(
-                text = "${month.yearMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${month.yearMonth.year}",
-                fontSize = 15.sp,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 6.dp),
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.3f)
-            )
+            Box(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "${month.yearMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${month.yearMonth.year}",
+                    fontSize = 15.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
+                )
+                Icon(
+                    imageVector = Icons.Filled.CalendarViewDay,
+                    contentDescription = "иконка футера",
+                    tint = MaterialTheme.colorScheme.onSurface.copy(0.2f),
+                    modifier = Modifier.align(Alignment.TopEnd).padding(top = 9.dp, end = 18.dp).size(20.dp)
+                )
+            }
         }
     )
 }
@@ -232,52 +234,55 @@ private fun DaysCalendar(viewModel: PlanCalendarViewModel) {
 private fun MonthsCalendar(viewModel: PlanCalendarViewModel) {
     val currentYear = LocalDate.now().year
     val currentMonth = LocalDate.now().month
-    val months = Month.values().toList()
+    val months = Month.entries
 
     Column {
         LazyVerticalGrid(
             columns = GridCells.Fixed(3),
             verticalArrangement = Arrangement.spacedBy(6.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 10.dp)
+            modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
         ) {
             items(months) { month ->
                 Box(
+                    contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .aspectRatio(1.6f)
-                        .padding(8.dp)
-                        .clip(RoundedCornerShape(50.dp))
+                        .clip(RoundedCornerShape(15.dp))
                         .background(
                             color = if (month == currentMonth) MaterialTheme.colorScheme.primary else Color.Transparent,
-                            shape = RoundedCornerShape(50.dp)
+                            shape = RoundedCornerShape(15.dp)
                         )
-                        .clickable { /* TODO */ },
-                    contentAlignment = Alignment.Center
+                        .clickable { /* TODO */ }
+
                 ) {
                     Text(
-                        text = month.getDisplayName(TextStyle.FULL, Locale.getDefault())
-                            .replaceFirstChar { it.uppercaseChar() },
+                        text = month.getDisplayName(TextStyle.FULL, Locale.getDefault()).replaceFirstChar { it.uppercaseChar() },
                         fontSize = if (month == currentMonth) 18.sp else 14.sp,
-                        color = if (month == currentMonth) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onSecondary,
+                        color = if (month == currentMonth) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center
                     )
+
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "$currentYear",
-            fontSize = 18.sp,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 20.dp),
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.3f)
-        )
+        Box(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = "$currentYear",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+            )
+            Icon(
+                imageVector = Icons.Filled.CalendarViewWeek,
+                contentDescription = "иконка футера",
+                tint = MaterialTheme.colorScheme.onSurface.copy(0.2f),
+                modifier = Modifier.align(Alignment.TopEnd).padding(top = 12.dp, end = 24.dp).size(20.dp)
+            )
+        }
     }
 }
 
@@ -292,43 +297,52 @@ private fun YearsCalendar(viewModel: PlanCalendarViewModel) {
             columns = GridCells.Fixed(4),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 10.dp)
+            modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
         ) {
             items(years) { year ->
                 Box(
+                    contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .aspectRatio(1.6f)
-                        .padding(10.dp)
-                        .clip(RoundedCornerShape(50.dp))
+                        .clip(RoundedCornerShape(10.dp))
                         .background(
                             color = if (year == currentYear) MaterialTheme.colorScheme.primary else Color.Transparent,
-                            shape = RoundedCornerShape(50.dp)
+                            shape = RoundedCornerShape(10.dp)
                         )
                         .clickable { /* TODO */ },
-                    contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = year.toString(),
-                        color = if (year == currentYear) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onSecondary,
+                        color = if (year == currentYear) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onSurface,
                         fontSize = if (year == currentYear) 18.sp else 14.sp,
                         textAlign = TextAlign.Center
                     )
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "21 век",
-            fontSize = 18.sp,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 20.dp),
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.3f)
-        )
+        Box(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = "21 век",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                modifier = Modifier.fillMaxWidth().padding(top = 15.dp),
+            )
+            Icon(
+                imageVector = Icons.Filled.CalendarViewMonth,
+                contentDescription = "иконка футера",
+                tint = MaterialTheme.colorScheme.onSurface.copy(0.2f),
+                modifier = Modifier.align(Alignment.TopEnd).padding(top = 18.dp, end = 22.dp).size(20.dp)
+            )
+        }
     }
 }
+
+/*****************************************************************
+ * Classes
+ ****************************************************************/
+/*****************************************************************
+ * Preview
+ ****************************************************************/
