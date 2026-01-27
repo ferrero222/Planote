@@ -68,8 +68,8 @@ enum class CalendarViewType { DAYS, MONTHS, YEARS }
  ****************************************************************/
 interface PlanCalendarImplements {
     fun getCurrentDateImpl() : LocalDate
-    fun getDays(year: Int, month: Int): List<PlanCalendarDay>
-    fun getMonths(year: Int): List<PlanCalendarMonth>
+    fun getDays(): List<PlanCalendarDay>
+    fun getMonths(): List<PlanCalendarMonth>
     fun getYears(): List<PlanCalendarYear>
     fun getDayTasks(day: PlanCalendarDay): List<PlanCalendarDayTask>
     fun getMonthTasks(month: PlanCalendarMonth): List<PlanCalendarMonthTask>
@@ -120,13 +120,6 @@ class PlanCalendarViewModel @Inject constructor(
     /*************************************************************
      * Constructors and init
      *************************************************************/
-    init {
-        dataStateHandler()
-    }
-
-    /*************************************************************
-    * Private functions
-    *************************************************************/
     /**
      * Subscribe function to calendar data. Each time when
      * entity of data base will be changed this function will be
@@ -135,7 +128,7 @@ class PlanCalendarViewModel @Inject constructor(
      * @param
      * @return None
      **/
-    private fun dataStateHandler() {
+    init {
         viewModelScope.launch {
             combine(
                 daysRepository.getDaysAfterThan(currentDate),
@@ -156,24 +149,27 @@ class PlanCalendarViewModel @Inject constructor(
         }
     }
 
+    /*************************************************************
+    * Private functions
+    *************************************************************/
     /**
      * domain entity convertors
      * @param
      * @return None
      **/
-    private fun PlanCalendarDayEntity.toDomain() = PlanCalendarDay(this.bdId, this.title, this.date)
-    private fun PlanCalendarMonthEntity.toDomain() = PlanCalendarMonth(this.bdId, this.title, this.date)
-    private fun PlanCalendarYearEntity.toDomain() = PlanCalendarYear(this.bdId, this.title, this.date)
-    private fun PlanCalendarDayTaskEntity.toDomain() = PlanCalendarDayTask(this.bdId, this.ownerId, this.title, this.description, this.isDone)
+    private fun PlanCalendarDayEntity.toDomain()       = PlanCalendarDay(this.bdId, this.title, this.date)
+    private fun PlanCalendarMonthEntity.toDomain()     = PlanCalendarMonth(this.bdId, this.title, this.date)
+    private fun PlanCalendarYearEntity.toDomain()      = PlanCalendarYear(this.bdId, this.title, this.date)
+    private fun PlanCalendarDayTaskEntity.toDomain()   = PlanCalendarDayTask(this.bdId, this.ownerId, this.title, this.description, this.isDone)
     private fun PlanCalendarMonthTaskEntity.toDomain() = PlanCalendarMonthTask(this.bdId, this.ownerId, this.title, this.description, this.isDone)
-    private fun PlanCalendarYearTaskEntity.toDomain() = PlanCalendarYearTask(this.bdId, this.ownerId, this.title, this.description, this.isDone)
+    private fun PlanCalendarYearTaskEntity.toDomain()  = PlanCalendarYearTask(this.bdId, this.ownerId, this.title, this.description, this.isDone)
 
-    private fun PlanCalendarDay.toEntity() = PlanCalendarDayEntity(this.id, this.title, this.date)
-    private fun PlanCalendarMonth.toEntity() = PlanCalendarMonthEntity(this.id, this.title, this.date)
-    private fun PlanCalendarYear.toEntity() = PlanCalendarYearEntity(this.id, this.title, this.date)
-    private fun PlanCalendarDayTask.toEntity() = PlanCalendarDayTaskEntity(this.id, this.ownerId, this.title, this.description, this.isDone)
+    private fun PlanCalendarDay.toEntity()       = PlanCalendarDayEntity(this.id, this.title, this.date)
+    private fun PlanCalendarMonth.toEntity()     = PlanCalendarMonthEntity(this.id, this.title, this.date)
+    private fun PlanCalendarYear.toEntity()      = PlanCalendarYearEntity(this.id, this.title, this.date)
+    private fun PlanCalendarDayTask.toEntity()   = PlanCalendarDayTaskEntity(this.id, this.ownerId, this.title, this.description, this.isDone)
     private fun PlanCalendarMonthTask.toEntity() = PlanCalendarMonthTaskEntity(this.id, this.ownerId, this.title, this.description, this.isDone)
-    private fun PlanCalendarYearTask.toEntity() = PlanCalendarYearTaskEntity(this.id, this.ownerId, this.title, this.description, this.isDone)
+    private fun PlanCalendarYearTask.toEntity()  = PlanCalendarYearTaskEntity(this.id, this.ownerId, this.title, this.description, this.isDone)
 
     /**
      * @param
@@ -203,9 +199,9 @@ class PlanCalendarViewModel @Inject constructor(
     override fun setViewType(viewType: CalendarViewType) = _dataState.update { it.copy(currentViewType = viewType) }
     override fun getCurrentDateImpl(): LocalDate = currentDate
 
-    override fun getDays(year: Int, month: Int): List<PlanCalendarDay> = dataState.value.days
-    override fun getMonths(year: Int): List<PlanCalendarMonth>         = dataState.value.months
-    override fun getYears(): List<PlanCalendarYear>                    = dataState.value.years
+    override fun getDays(): List<PlanCalendarDay> = _dataState.value.days
+    override fun getMonths(): List<PlanCalendarMonth> = _dataState.value.months
+    override fun getYears(): List<PlanCalendarYear> = _dataState.value.years
 
     override fun getDayTasks(day: PlanCalendarDay): List<PlanCalendarDayTask>         = daysRepository.getTasksForDay(day.id).map{entity -> entity.toDomain()}
     override fun getMonthTasks(month: PlanCalendarMonth): List<PlanCalendarMonthTask> = monthsRepository.getTasksForMonth(month.id).map{entity -> entity.toDomain()}
@@ -347,7 +343,7 @@ class PlanCalendarViewModel @Inject constructor(
     override fun deleteMonthTask(month: PlanCalendarMonth, task: PlanCalendarMonthTask) {
         viewModelScope.launch {
             try {
-                if(month.exist() && !task.exist(month)) monthsRepository.deleteMonthTask(task.toEntity())
+                if(month.exist() && task.exist(month)) monthsRepository.deleteMonthTask(task.toEntity())
             } catch (e: Exception) {
                 _dataState.update { it.copy(error = "DB: Month deleting task error: ${e.message}") }
             }
