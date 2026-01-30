@@ -44,7 +44,7 @@ data class PlanCalendarDayTaskEntity(
     @PrimaryKey(autoGenerate = true)
     val bdId: Long = 0,
     val ownerId: Long,
-    val title: String,
+    val title: String? = null,
     val description: String? = null,
     val isDone : Boolean = false
 )
@@ -76,7 +76,7 @@ data class PlanCalendarMonthTaskEntity(
     @PrimaryKey(autoGenerate = true)
     val bdId: Long = 0,
     val ownerId: Long,
-    val title: String,
+    val title: String? = null,
     val description: String? = null,
     val isDone : Boolean = false
 )
@@ -108,7 +108,7 @@ data class PlanCalendarYearTaskEntity(
     @PrimaryKey(autoGenerate = true)
     val bdId: Long = 0,
     val ownerId: Long,
-    val title: String,
+    val title: String? = null,
     val description: String? = null,
     val isDone : Boolean = false
 )

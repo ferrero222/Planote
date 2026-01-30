@@ -51,23 +51,23 @@ interface PlanCalendarTaskBaseDao<Task> {
 @Dao
 abstract class PlanCalendarDaysDao : PlanCalendarEntityBaseDao<PlanCalendarDayEntity>,
     PlanCalendarTaskBaseDao<PlanCalendarDayTaskEntity> {
-    @Query("SELECT * FROM planCalendarDay WHERE date < :cutoffDate ORDER BY date ASC") abstract fun getDaysBeforeThan(cutoffDate: LocalDate): List<PlanCalendarDayEntity>
+    @Query("SELECT * FROM planCalendarDay WHERE date < :cutoffDate ORDER BY date ASC") abstract fun getDaysBeforeThan(cutoffDate: LocalDate): Flow<List<PlanCalendarDayEntity>>
     @Query("SELECT * FROM planCalendarDay WHERE date >= :cutoffDate ORDER BY date ASC") abstract fun getDaysAfterThan(cutoffDate: LocalDate): Flow<List<PlanCalendarDayEntity>>
-    @Query("SELECT * FROM planCalendarDayTask WHERE ownerId = :dayId") abstract fun getTasksForDay(dayId: Long): List<PlanCalendarDayTaskEntity>
+    @Query("SELECT * FROM planCalendarDayTask WHERE ownerId = :dayId") abstract fun getTasksForDay(dayId: Long): Flow<List<PlanCalendarDayTaskEntity>>
 }
 
 @Dao
 abstract class PlanCalendarMonthsDao : PlanCalendarEntityBaseDao<PlanCalendarMonthEntity>,
     PlanCalendarTaskBaseDao<PlanCalendarMonthTaskEntity> {
-    @Query("SELECT * FROM planCalendarMonth WHERE date < :cutoffDate ORDER BY date ASC") abstract fun getMonthsBeforeThan(cutoffDate: LocalDate): List<PlanCalendarMonthEntity>
+    @Query("SELECT * FROM planCalendarMonth WHERE date < :cutoffDate ORDER BY date ASC") abstract fun getMonthsBeforeThan(cutoffDate: LocalDate): Flow<List<PlanCalendarMonthEntity>>
     @Query("SELECT * FROM planCalendarMonth WHERE date >= :cutoffDate ORDER BY date ASC") abstract fun getMonthsAfterThan(cutoffDate: LocalDate): Flow<List<PlanCalendarMonthEntity>>
-    @Query("SELECT * FROM planCalendarMonthTask WHERE ownerId = :monthId") abstract fun getTasksForMonth(monthId: Long): List<PlanCalendarMonthTaskEntity>
+    @Query("SELECT * FROM planCalendarMonthTask WHERE ownerId = :monthId") abstract fun getTasksForMonth(monthId: Long): Flow<List<PlanCalendarMonthTaskEntity>>
 }
 
 @Dao
 abstract class PlanCalendarYearsDao : PlanCalendarEntityBaseDao<PlanCalendarYearEntity>,
     PlanCalendarTaskBaseDao<PlanCalendarYearTaskEntity> {
-    @Query("SELECT * FROM planCalendarYear WHERE date < :cutoffDate ORDER BY date ASC") abstract fun getYearsBeforeThan(cutoffDate: LocalDate): List<PlanCalendarYearEntity>
+    @Query("SELECT * FROM planCalendarYear WHERE date < :cutoffDate ORDER BY date ASC") abstract fun getYearsBeforeThan(cutoffDate: LocalDate): Flow<List<PlanCalendarYearEntity>>
     @Query("SELECT * FROM planCalendarYear WHERE date >= :cutoffDate ORDER BY date ASC") abstract fun getYearsAfterThan(cutoffDate: LocalDate): Flow<List<PlanCalendarYearEntity>>
-    @Query("SELECT * FROM planCalendarYearTask WHERE ownerId = :yearId") abstract fun getTasksForYear(yearId: Long): List<PlanCalendarYearTaskEntity>
+    @Query("SELECT * FROM planCalendarYearTask WHERE ownerId = :yearId") abstract fun getTasksForYear(yearId: Long): Flow<List<PlanCalendarYearTaskEntity>>
 }

@@ -33,9 +33,9 @@ class PlanCalendarDaysRepository(private val daysDao: PlanCalendarDaysDao) {
     suspend fun insertDayTask(task: PlanCalendarDayTaskEntity): Long = daysDao.insertEntityTask(task)
     suspend fun updateDayTask(task: PlanCalendarDayTaskEntity) = daysDao.updateEntityTask(task)
     suspend fun deleteDayTask(task: PlanCalendarDayTaskEntity) = daysDao.deleteEntityTask(task)
-    fun getDaysBeforeThan(cutoffDate: LocalDate): List<PlanCalendarDayEntity> = daysDao.getDaysBeforeThan(cutoffDate)
-    fun getDaysAfterThan(cutoffDate: LocalDate): Flow<List<PlanCalendarDayEntity>> = daysDao.getDaysAfterThan(cutoffDate)
-    fun getTasksForDay(dayId: Long): List<PlanCalendarDayTaskEntity> = daysDao.getTasksForDay(dayId)
+    suspend fun getDaysBeforeThan(cutoffDate: LocalDate): Flow<List<PlanCalendarDayEntity>> = daysDao.getDaysBeforeThan(cutoffDate)
+    suspend fun getDaysAfterThan(cutoffDate: LocalDate): Flow<List<PlanCalendarDayEntity>> = daysDao.getDaysAfterThan(cutoffDate)
+    suspend fun getTasksForDay(dayId: Long): Flow<List<PlanCalendarDayTaskEntity>> = daysDao.getTasksForDay(dayId)
 }
 
 class PlanCalendarMonthsRepository(private val monthsDao: PlanCalendarMonthsDao) {
@@ -45,9 +45,9 @@ class PlanCalendarMonthsRepository(private val monthsDao: PlanCalendarMonthsDao)
     suspend fun insertMonthTask(task: PlanCalendarMonthTaskEntity): Long = monthsDao.insertEntityTask(task)
     suspend fun updateMonthTask(task: PlanCalendarMonthTaskEntity) = monthsDao.updateEntityTask(task)
     suspend fun deleteMonthTask(task: PlanCalendarMonthTaskEntity) = monthsDao.deleteEntityTask(task)
-    fun getMonthsBeforeThan(cutoffDate: LocalDate): List<PlanCalendarMonthEntity> = monthsDao.getMonthsBeforeThan(cutoffDate)
-    fun getMonthsAfterThan(cutoffDate: LocalDate): Flow<List<PlanCalendarMonthEntity>> = monthsDao.getMonthsAfterThan(cutoffDate)
-    fun getTasksForMonth(monthId: Long): List<PlanCalendarMonthTaskEntity> = monthsDao.getTasksForMonth(monthId)
+    suspend fun getMonthsBeforeThan(cutoffDate: LocalDate): Flow<List<PlanCalendarMonthEntity>> = monthsDao.getMonthsBeforeThan(cutoffDate)
+    suspend fun getMonthsAfterThan(cutoffDate: LocalDate): Flow<List<PlanCalendarMonthEntity>> = monthsDao.getMonthsAfterThan(cutoffDate)
+    suspend fun getTasksForMonth(monthId: Long): Flow<List<PlanCalendarMonthTaskEntity>> = monthsDao.getTasksForMonth(monthId)
 }
 
 class PlanCalendarYearsRepository(private val yearsDao: PlanCalendarYearsDao) {
@@ -57,7 +57,7 @@ class PlanCalendarYearsRepository(private val yearsDao: PlanCalendarYearsDao) {
     suspend fun insertYearTask(task: PlanCalendarYearTaskEntity): Long = yearsDao.insertEntityTask(task)
     suspend fun updateYearTask(task: PlanCalendarYearTaskEntity) = yearsDao.updateEntityTask(task)
     suspend fun deleteYearTask(task: PlanCalendarYearTaskEntity) = yearsDao.deleteEntityTask(task)
-    fun getYearsBeforeThan(cutoffDate: LocalDate): List<PlanCalendarYearEntity> = yearsDao.getYearsBeforeThan(cutoffDate)
-    fun getYearsAfterThan(cutoffDate: LocalDate): Flow<List<PlanCalendarYearEntity>> = yearsDao.getYearsAfterThan(cutoffDate)
-    fun getTasksForYear(yearId: Long): List<PlanCalendarYearTaskEntity> = yearsDao.getTasksForYear(yearId)
+    suspend fun getYearsBeforeThan(cutoffDate: LocalDate): Flow<List<PlanCalendarYearEntity>> = yearsDao.getYearsBeforeThan(cutoffDate)
+    suspend fun getYearsAfterThan(cutoffDate: LocalDate): Flow<List<PlanCalendarYearEntity>> = yearsDao.getYearsAfterThan(cutoffDate)
+    suspend fun getTasksForYear(yearId: Long): Flow<List<PlanCalendarYearTaskEntity>> = yearsDao.getTasksForYear(yearId)
 }

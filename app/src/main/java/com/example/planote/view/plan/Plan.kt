@@ -20,17 +20,38 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.planote.BackgroundDark
 import com.example.planote.view.plan.component.CalendarBlock
-import com.example.planote.view.plan.component.CalendarViewDetailsDialog
+import com.example.planote.view.plan.component.CalendarDetailsDialog
 import com.example.planote.view.plan.component.HeaderBlock
 import com.example.planote.view.plan.component.TodayBlock
 import com.example.planote.view.plan.component.WeekBlock
-import com.example.planote.viewModel.plan.CalendarViewType
+import com.example.planote.viewModel.plan.CalendarType
 import java.time.LocalDate
 
 /*****************************************************************
  * Variables, data, enum
  ****************************************************************/
 val PlanColorOnSurface = BackgroundDark.copy(alpha = 0.6f)
+
+sealed class PlannerDialogType{
+
+    data object None : PlannerDialogType()
+
+    data class WeekDetails(
+        val date: LocalDate,
+    ) : PlannerDialogType()
+
+    data class CalendarDetails(
+        val date: LocalDate,
+        val type: CalendarType,
+        val mode: CalendarDialogMode
+    ) : PlannerDialogType()
+
+    data class TaskDetails(
+        val date: LocalDate,
+    ) : PlannerDialogType()
+}
+
+enum class CalendarDialogMode { VIEW, EDIT }
 
 /*****************************************************************
  * Interfaces
@@ -52,8 +73,7 @@ fun PlannerPage() {
     when (val curState = dialogState) {
         is PlannerDialogType.None -> Unit
         is PlannerDialogType.WeekDetails -> Unit
-        is PlannerDialogType.CalendarViewDetails -> CalendarViewDetailsDialog(date = curState.date, type = curState.type){state -> dialogState = state}
-        is PlannerDialogType.CalendarEditDetails -> Unit
+        is PlannerDialogType.CalendarDetails -> CalendarDetailsDialog(date = curState.date, type = curState.type, mode = curState.mode){state -> dialogState = state}
         is PlannerDialogType.TaskDetails -> Unit
     }
 }
@@ -61,27 +81,7 @@ fun PlannerPage() {
 /*****************************************************************
  * Classes
  ****************************************************************/
-sealed class PlannerDialogType{
-    data object None : PlannerDialogType()
 
-    data class WeekDetails(
-        val date: LocalDate,
-    ) : PlannerDialogType()
-
-    data class CalendarViewDetails(
-        val date: LocalDate,
-        val type : CalendarViewType,
-    ) : PlannerDialogType()
-
-    data class CalendarEditDetails(
-        val date: LocalDate,
-        val type : CalendarViewType,
-    ) : PlannerDialogType()
-
-    data class TaskDetails(
-        val date: LocalDate,
-    ) : PlannerDialogType()
-}
 
 /*****************************************************************
  * Preview
