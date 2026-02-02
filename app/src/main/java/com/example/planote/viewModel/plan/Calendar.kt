@@ -70,11 +70,8 @@ enum class CalendarType { DAYS, MONTHS, YEARS }
 interface PlanCalendarImplements {
     fun getCurrentDateImpl() : LocalDate
     fun getEntity(type :CalendarType): List<PlanCalendarEntityDomain>
-    fun getTasks(type: CalendarType, entity: PlanCalendarEntityDomain)
-    fun updateEntity(type: CalendarType, entity: PlanCalendarEntityDomain)
-    fun updateTask(type: CalendarType, entity: PlanCalendarEntityDomain, task: PlanCalendarTaskDomain)
-    fun deleteEntity(type: CalendarType, entity: PlanCalendarEntityDomain)
-    fun deleteTask(type: CalendarType, entity: PlanCalendarEntityDomain, task: PlanCalendarTaskDomain)
+    fun getEntityTasks(type: CalendarType, entity: PlanCalendarEntityDomain)
+    fun updateEntity(type: CalendarType, entity: PlanCalendarEntityDomain, task: PlanCalendarTaskDomain)
     fun setType(type: CalendarType)
 }
 
@@ -165,6 +162,7 @@ class PlanCalendarViewModel @Inject constructor(
         CalendarType.YEARS  -> _dataState.value.years.contains(this)
     }
 
+    private fun PlanCalendarTaskDomain.isEmpty(): Boolean = this.title.isNullOrBlank() && this.description.isNullOrBlank()
     private fun PlanCalendarTaskDomain.exist(): Boolean = _taskState.value.tasks.contains(this)
 
     /*************************************************************
@@ -184,7 +182,8 @@ class PlanCalendarViewModel @Inject constructor(
         CalendarType.YEARS  -> _dataState.value.years
     }
 
-    override fun getTasks(type: CalendarType, entity: PlanCalendarEntityDomain){
+    override fun getEntityTasks(type: CalendarType, entity: PlanCalendarEntityDomain){
+        _taskState.value = PlanCalendarTempTaskHolder()
         if(entity.exist(type)) {
             viewModelScope.launch {
                 try {
@@ -202,90 +201,59 @@ class PlanCalendarViewModel @Inject constructor(
         }
     }
 
+
     /**
      * @param
      * @return None
      **/
-    override fun updateEntity(type: CalendarType, entity: PlanCalendarEntityDomain) {
+    override fun updateEntity(type: CalendarType, entity: PlanCalendarEntityDomain, task: PlanCalendarTaskDomain) {
+        _taskState.value = PlanCalendarTempTaskHolder() //clear temp tasks buffer
         viewModelScope.launch {
             try {
-                if (entity.exist(type)) {
-                    if(entity.isEmpty(type)) deleteEntity(type, entity)
-                    else when(type) {
+
+                if (entity.exist(type)) { //entity already exist
+                    if(entity.isEmpty(type)) when(type) { //new entity is empty -> delete
+                        CalendarType.DAYS   -> daysRepository.deleteDay(entity.toEntityDay())
+                        CalendarType.MONTHS -> monthsRepository.deleteMonth(entity.toEntityMonth())
+                        CalendarType.YEARS  -> yearsRepository.deleteYear(entity.toEntityYear())
+                    }
+                    else when(type) { //new entity is not empty -> update
                         CalendarType.DAYS   -> daysRepository.updateDay(entity.toEntityDay())
                         CalendarType.MONTHS -> monthsRepository.updateMonth(entity.toEntityMonth())
                         CalendarType.YEARS  -> yearsRepository.updateYear(entity.toEntityYear())
                     }
                 }
-                else when(type) {
+                else when(type) { //entity isn exist -> create
                     CalendarType.DAYS   -> daysRepository.insertDay(entity.toEntityDay())
                     CalendarType.MONTHS -> monthsRepository.insertMonth(entity.toEntityMonth())
                     CalendarType.YEARS  -> yearsRepository.insertYear(entity.toEntityYear())
                 }
-            } catch (e: Exception) {
-                _dataState.update { it.copy(error = "DB: Day adding error: ${e.message}") }
-            }
-        }
-    }
 
-
-    /**
-     * @param
-     * @return None
-     **/
-    override fun updateTask(type: CalendarType, entity: PlanCalendarEntityDomain, task: PlanCalendarTaskDomain) {
-        viewModelScope.launch {
-            try {
-                if (!entity.exist(type)) when(type) {
-                    CalendarType.DAYS   -> daysRepository.insertDay(entity.toEntityDay())
-                    CalendarType.MONTHS -> monthsRepository.insertMonth(entity.toEntityMonth())
-                    CalendarType.YEARS  -> yearsRepository.insertYear(entity.toEntityYear())
+                if (task.exist()) { //task of entity exist
+                    if (task.isEmpty()) when (type) { //new tasks is empty -> delete
+                        CalendarType.DAYS -> daysRepository.deleteDayTask(task.toEntityDay())
+                        CalendarType.MONTHS -> monthsRepository.deleteMonthTask(task.toEntityMonth())
+                        CalendarType.YEARS -> yearsRepository.deleteYearTask(task.toEntityYear())
+                    }
+                    else when (type) { //new task isnt empty -> update
+                        CalendarType.DAYS -> daysRepository.updateDayTask(task.toEntityDay())
+                        CalendarType.MONTHS -> monthsRepository.updateMonthTask(task.toEntityMonth())
+                        CalendarType.YEARS -> yearsRepository.updateYearTask(task.toEntityYear())
+                    }
                 }
-                if (task.exist()) when(type) {
-                    CalendarType.DAYS   -> daysRepository.updateDayTask(task.toEntityDay())
-                    CalendarType.MONTHS -> monthsRepository.updateMonthTask(task.toEntityMonth())
-                    CalendarType.YEARS  -> yearsRepository.updateYearTask(task.toEntityYear())
-                }
-                else when(type) {
+                else when(type) { //task of entity isn exist -> create
                     CalendarType.DAYS   -> daysRepository.insertDayTask(task.toEntityDay())
                     CalendarType.MONTHS -> monthsRepository.insertMonthTask(task.toEntityMonth())
                     CalendarType.YEARS  -> yearsRepository.insertYearTask(task.toEntityYear())
                 }
+
             } catch (e: Exception) {
-                _dataState.update { it.copy(error = "DB: Day adding task error: ${e.message}") }
+                _dataState.update { it.copy(error = "DB: Day error trying update entity: ${e.message}") }
             }
         }
     }
-
-    override fun deleteEntity(type: CalendarType, entity: PlanCalendarEntityDomain) {
-        viewModelScope.launch {
-            try {
-                if(entity.exist(type)) when(type) {
-                    CalendarType.DAYS   -> daysRepository.deleteDay(entity.toEntityDay())
-                    CalendarType.MONTHS -> monthsRepository.deleteMonth(entity.toEntityMonth())
-                    CalendarType.YEARS  -> yearsRepository.deleteYear(entity.toEntityYear())
-                }
-            } catch (e: Exception) {
-                _dataState.update { it.copy(error = "DB: Entity deleting error: ${e.message}") }
-            }
-        }
-    }
-
-    override fun deleteTask(type: CalendarType, entity: PlanCalendarEntityDomain, task: PlanCalendarTaskDomain) {
-        viewModelScope.launch {
-            try {
-                if(entity.exist(type) && task.exist()) when(type) {
-                    CalendarType.DAYS   -> daysRepository.deleteDayTask(task.toEntityDay())
-                    CalendarType.MONTHS -> monthsRepository.deleteMonthTask(task.toEntityMonth())
-                    CalendarType.YEARS  -> yearsRepository.deleteYearTask(task.toEntityYear())
-                }
-            } catch (e: Exception) {
-                _dataState.update { it.copy(error = "DB: Task deleting error: ${e.message}") }
-            }
-        }
-    }
-
 }
+
 /*****************************************************************
  * End of class
  ****************************************************************/

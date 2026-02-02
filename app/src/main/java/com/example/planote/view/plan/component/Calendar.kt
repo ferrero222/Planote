@@ -71,9 +71,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -91,6 +89,7 @@ import com.example.planote.view.plan.PlanColorOnSurface
 import com.example.planote.view.plan.PlannerDialogType
 import com.example.planote.viewModel.plan.CalendarType
 import com.example.planote.viewModel.plan.PlanCalendarEntityDomain
+import com.example.planote.viewModel.plan.PlanCalendarTaskDomain
 import com.example.planote.viewModel.plan.PlanCalendarViewModel
 import com.kizitonwose.calendar.compose.HorizontalCalendar
 import com.kizitonwose.calendar.compose.rememberCalendarState
@@ -190,12 +189,12 @@ fun CalendarDetailsDialog(date: LocalDate, type: CalendarType, mode: CalendarDia
 fun CalendarDetailsDialogContent(viewModel: PlanCalendarViewModel = hiltViewModel(), date: LocalDate, type: CalendarType, mode: CalendarDialogMode, dialogStateChange: (PlannerDialogType) -> Unit
 ) {
     var curEntity = viewModel.getEntity(type).find { it.date == date }
+    var curTasks : List<PlanCalendarTaskDomain>
 
-
-
-    var curTasks = viewModel.getTasks()
-    viewModel.getTasks(type, curEntity ?: PlanCalendarEntityDomain())
+    viewModel.getEntityTasks(type, curEntity ?: PlanCalendarEntityDomain())
     val taskState by viewModel.taskState.collectAsStateWithLifecycle()
+
+    curTasks = taskState.tasks
 
     Box(
         modifier = Modifier.fillMaxSize().padding(vertical = 15.dp)
@@ -266,15 +265,15 @@ fun CalendarDetailsDialogContent(viewModel: PlanCalendarViewModel = hiltViewMode
                 )
                 if (mode == CalendarDialogMode.VIEW) {
                     Text(
-                        text = descriptionText.ifEmpty { "Нет данных" },
+                        text = curEntity?.title ?:  "Нет данных" ,
                         fontSize = 15.sp,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 } else {
                     OutlinedTextField(
-                        value = descriptionText,
-                        onValueChange = { descriptionText = it },
+                        value = curEntity?.title ?: "Нет данных",
+                        onValueChange = {onTitle -> curEntity = curEntity?.copy(title = onTitle)},
                         textStyle = androidx.compose.ui.text.TextStyle(fontSize = 15.sp),
                         shape = RoundedCornerShape(20.dp),
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
@@ -286,7 +285,7 @@ fun CalendarDetailsDialogContent(viewModel: PlanCalendarViewModel = hiltViewMode
                 }
             }
 
-            /* ===== TASKS ===== */
+            /* TASKS */
             Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)) {
                 Text(
                     text = "ЗАДАЧИ",
@@ -307,9 +306,7 @@ fun CalendarDetailsDialogContent(viewModel: PlanCalendarViewModel = hiltViewMode
                             ) {
                                 Checkbox(
                                     checked = task.isDone,
-                                    onCheckedChange = { completed ->
-                                        viewModel.updateTask(type, curEntity, task.copy(isDone = completed))
-                                    },
+                                    onCheckedChange = { completed -> curTasks = curTasks.map{if(it.id == task.id) it.copy(isDone = completed) else it }},
                                     colors = CheckboxDefaults.colors(
                                         checkedColor = MaterialTheme.colorScheme.primary,
                                         uncheckedColor = Color.Gray
@@ -326,7 +323,7 @@ fun CalendarDetailsDialogContent(viewModel: PlanCalendarViewModel = hiltViewMode
                                 if (mode == CalendarDialogMode.EDIT) {
                                     Row {
                                         IconButton(
-                                            onClick = { viewModel.getTasks(type, curEntity)}
+                                            onClick = {/*TODO*/}
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.EditNote,
@@ -336,10 +333,7 @@ fun CalendarDetailsDialogContent(viewModel: PlanCalendarViewModel = hiltViewMode
                                             )
                                         }
                                         IconButton(
-                                            onClick = {
-                                                viewModel.deleteTask(type, curEntity, task)
-                                                viewModel.getTasks(type, curEntity)
-                                            }
+                                            onClick = {curTasks = curTasks.map{if(it.id == task.id) PlanCalendarTaskDomain() else it }}
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.Delete,
@@ -412,7 +406,7 @@ fun CalendarDetailsDialogContent(viewModel: PlanCalendarViewModel = hiltViewMode
                     ),
                     contentPadding = PaddingValues(vertical = 15.dp),
                     onClick = {
-                        viewModel.updateEntity(type, curEntity?.copy(title = descriptionText) ?: PlanCalendarEntityDomain(title = descriptionText, id = 0, date = date))
+                        items(curTasks, key = { it.id }){ item -> viewModel.updateEntity(type, curEntity, item) }
                         dialogStateChange(PlannerDialogType.CalendarDetails(date = date, type = type, mode = CalendarDialogMode.VIEW))
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -420,7 +414,7 @@ fun CalendarDetailsDialogContent(viewModel: PlanCalendarViewModel = hiltViewMode
                     Text(text = "СОХРАНИТЬ", fontWeight = FontWeight.Bold)
                 }
                 TextButton(
-                    onClick = { if (curEntity != null) viewModel.deleteEntity(type, curEntity) },
+                    onClick = { curEntity?.let { viewModel.updateEntity(type, it, PlanCalendarTaskDomain()) } },
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
                 ) {
                     Text(
