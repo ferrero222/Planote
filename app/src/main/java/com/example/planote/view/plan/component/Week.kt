@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
@@ -38,6 +39,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.planote.view.plan.PlanColorOnSurface
 import com.example.planote.viewModel.plan.PlanCalendarViewModel
+import me.trishiraj.shadowglow.shadowGlow
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.TextStyle
@@ -63,6 +66,11 @@ fun WeekBlock(viewModel: PlanCalendarViewModel = hiltViewModel()) {
     val today = LocalDate.now()
     val startOfWeek = today.with(DayOfWeek.MONDAY)
     val weekDays = (0..6).map { startOfWeek.plusDays(it.toLong()) }
+    val todayIndex = weekDays.indexOfFirst { it == today }
+    val lazyListState = rememberLazyListState()
+
+    LaunchedEffect(todayIndex) { lazyListState.animateScrollToItem(index = todayIndex) }
+
     Card(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -78,6 +86,7 @@ fun WeekBlock(viewModel: PlanCalendarViewModel = hiltViewModel()) {
                 modifier = Modifier.padding(top = 20.dp, bottom = 5.dp),
                 )
             LazyRow(
+                state = lazyListState,
                 modifier = Modifier.padding(top = 5.dp, bottom = 15.dp),
             ) {
                 items(weekDays) { date ->
@@ -110,6 +119,12 @@ fun WeekBlock(viewModel: PlanCalendarViewModel = hiltViewModel()) {
                             .width(100.dp)
                             .height(160.dp)
                             .padding(10.dp)
+                            .shadowGlow(
+                                color = if(isToday) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.0f),
+                                offsetX = 0.dp,
+                                offsetY = 0.dp,
+                                blurRadius = 15.dp
+                            )
                     ) {
                         Column(
                             verticalArrangement = Arrangement.spacedBy(4.dp),

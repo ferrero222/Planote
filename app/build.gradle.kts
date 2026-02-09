@@ -67,6 +67,7 @@ dependencies {
     implementation(libs.androidx.foundation.android)
     implementation(libs.places)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.foundation.layout)
     ksp(libs.androidx.room.compiler)
 
     // Hilt
@@ -102,4 +103,7 @@ dependencies {
 
     // Icons
     implementation(libs.androidx.compose.material.icons.extended)
+
+    //Glow
+    implementation(libs.shadow.glow)
 }
