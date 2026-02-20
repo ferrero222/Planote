@@ -79,32 +79,11 @@ interface PlanCalendarImplements {
         onStatusChange: (PlanCalendarLoadingStatus) -> Unit
     )
 
-    fun updateEntity(
-        status: PlanCalendarLoadingStatus,
-        coroutineScope: CoroutineScope,
-        type: PlanCalendarType,
-        entity: PlanCalendarEntityDomain,
-        tasks: List<PlanCalendarTaskDomain>,
-        onEntityId: (Long) -> Unit,
-        onStatusChange: (PlanCalendarLoadingStatus) -> Unit
-    )
-
-    fun updateEntityTasks(
-        status: PlanCalendarLoadingStatus,
-        coroutineScope: CoroutineScope,
-        type: PlanCalendarType,
-        entity: PlanCalendarEntityDomain,
-        newTasks: List<PlanCalendarTaskDomain>,
-        sourceTasks: List<PlanCalendarTaskDomain>,
-        onStatusChange: (PlanCalendarLoadingStatus) -> Unit
-    )
-
     fun updateEntityAndTasks(
         status: PlanCalendarLoadingStatus,
         coroutineScope: CoroutineScope,
         type: PlanCalendarType,
         entity: PlanCalendarEntityDomain,
-        onEntityId: (Long) -> Unit,
         newTasks: List<PlanCalendarTaskDomain>,
         sourceTasks: List<PlanCalendarTaskDomain>,
         onStatusChange: (PlanCalendarLoadingStatus) -> Unit
@@ -194,9 +173,17 @@ class PlanCalendarViewModel @Inject constructor(
         PlanCalendarType.YEARS  -> _dataState.value.years.find{ it.id == this.id } != null
     }
 
+    private fun PlanCalendarEntityDomain.isSame(type: PlanCalendarType): Boolean = when(type){
+        PlanCalendarType.DAYS   -> _dataState.value.days.find{ it == this} != null
+        PlanCalendarType.MONTHS -> _dataState.value.months.find{ it == this } != null
+        PlanCalendarType.YEARS  -> _dataState.value.years.find{ it == this } != null
+    }
+
     private fun PlanCalendarTaskDomain.isEmpty(): Boolean = this.title.isNullOrBlank() && this.description.isNullOrBlank()
 
     private fun PlanCalendarTaskDomain.exist(source: List<PlanCalendarTaskDomain>): Boolean = source.find{ it.id == this.id } != null
+
+    private fun PlanCalendarTaskDomain.isSame(source: List<PlanCalendarTaskDomain>): Boolean = source.find{ it == this } != null
 
     /*************************************************************
      * Public functions
@@ -237,94 +224,11 @@ class PlanCalendarViewModel @Inject constructor(
         }
     }
 
-    override fun updateEntity(
-        status: PlanCalendarLoadingStatus,
-        coroutineScope: CoroutineScope,
-        type: PlanCalendarType,
-        entity: PlanCalendarEntityDomain,
-        tasks: List<PlanCalendarTaskDomain>,
-        onEntityId: (Long) -> Unit,
-        onStatusChange: (PlanCalendarLoadingStatus) -> Unit
-    ){
-        if(status == PlanCalendarLoadingStatus.IDLE){
-            coroutineScope.launch {
-                onStatusChange(PlanCalendarLoadingStatus.PROC)
-                try {
-                    if (entity.exist(type)) { //entity already exist
-                        if(entity.isEmpty(type, tasks)) when(type) { //new entity is empty -> delete
-                            PlanCalendarType.DAYS   -> daysRepository.deleteDay(entity.toEntityDay())
-                            PlanCalendarType.MONTHS -> monthsRepository.deleteMonth(entity.toEntityMonth())
-                            PlanCalendarType.YEARS  -> yearsRepository.deleteYear(entity.toEntityYear())
-                        }
-                        else when(type) { //new entity is not empty -> update
-                            PlanCalendarType.DAYS   -> daysRepository.updateDay(entity.toEntityDay())
-                            PlanCalendarType.MONTHS -> monthsRepository.updateMonth(entity.toEntityMonth())
-                            PlanCalendarType.YEARS  -> yearsRepository.updateYear(entity.toEntityYear())
-                        }
-                    }
-                    else if (!entity.isEmpty(type, tasks)) when(type) { //entity isn exist and not empty -> create
-                        PlanCalendarType.DAYS   -> onEntityId(daysRepository.insertDay(entity.toEntityDay()))
-                        PlanCalendarType.MONTHS -> onEntityId(monthsRepository.insertMonth(entity.toEntityMonth()))
-                        PlanCalendarType.YEARS  -> onEntityId(yearsRepository.insertYear(entity.toEntityYear()))
-                    }
-                    onStatusChange(PlanCalendarLoadingStatus.DONE)
-                } catch (e: Exception) {
-                    onStatusChange(PlanCalendarLoadingStatus.DONE)
-                    throw RuntimeException("Fatal DB update entity error", e)
-
-                }
-            }
-        }
-
-    }
-
-    override fun updateEntityTasks(
-        status: PlanCalendarLoadingStatus,
-        coroutineScope: CoroutineScope,
-        type: PlanCalendarType,
-        entity: PlanCalendarEntityDomain,
-        newTasks: List<PlanCalendarTaskDomain>,
-        sourceTasks: List<PlanCalendarTaskDomain>,
-        onStatusChange: (PlanCalendarLoadingStatus) -> Unit
-    ) {
-        if (status == PlanCalendarLoadingStatus.IDLE) {
-            coroutineScope.launch {
-                onStatusChange(PlanCalendarLoadingStatus.PROC)
-                try {
-                    for (task in newTasks) {
-                        if (task.exist(sourceTasks)) { //task of entity exist
-                            if (task.isEmpty()) when (type) { //new tasks is empty -> delete
-                                PlanCalendarType.DAYS -> daysRepository.deleteDayTask(task.toEntityDay())
-                                PlanCalendarType.MONTHS -> monthsRepository.deleteMonthTask(task.toEntityMonth())
-                                PlanCalendarType.YEARS -> yearsRepository.deleteYearTask(task.toEntityYear())
-                            }
-                            else when (type) { //new task isnt empty -> update
-                                PlanCalendarType.DAYS -> daysRepository.updateDayTask(task.toEntityDay())
-                                PlanCalendarType.MONTHS -> monthsRepository.updateMonthTask(task.toEntityMonth())
-                                PlanCalendarType.YEARS -> yearsRepository.updateYearTask(task.toEntityYear())
-                            }
-                        } else if (!task.isEmpty()) when (type) { //task of entity isn exist and not empty -> create
-                            PlanCalendarType.DAYS -> daysRepository.insertDayTask(task.toEntityDay())
-                            PlanCalendarType.MONTHS -> monthsRepository.insertMonthTask(task.toEntityMonth())
-                            PlanCalendarType.YEARS -> yearsRepository.insertYearTask(task.toEntityYear())
-                        }
-                        delay(5)
-                    }
-                    onStatusChange(PlanCalendarLoadingStatus.DONE)
-                } catch (e: Exception) {
-                    onStatusChange(PlanCalendarLoadingStatus.DONE)
-                    throw RuntimeException("Fatal DB update task entity error", e)
-                }
-            }
-        }
-    }
-
     override fun updateEntityAndTasks(
         status: PlanCalendarLoadingStatus,
         coroutineScope: CoroutineScope,
         type: PlanCalendarType,
         entity: PlanCalendarEntityDomain,
-        onEntityId: (Long) -> Unit,
         newTasks: List<PlanCalendarTaskDomain>,
         sourceTasks: List<PlanCalendarTaskDomain>,
         onStatusChange: (PlanCalendarLoadingStatus) -> Unit
@@ -339,16 +243,16 @@ class PlanCalendarViewModel @Inject constructor(
                             PlanCalendarType.MONTHS -> monthsRepository.deleteMonth(entity.toEntityMonth())
                             PlanCalendarType.YEARS  -> yearsRepository.deleteYear(entity.toEntityYear())
                         }
-                        else when(type) { //new entity is not empty -> update
+                        else if(!entity.isSame(type)) when(type) { //new entity is not empty and isnt same -> update
                             PlanCalendarType.DAYS   -> daysRepository.updateDay(entity.toEntityDay())
                             PlanCalendarType.MONTHS -> monthsRepository.updateMonth(entity.toEntityMonth())
                             PlanCalendarType.YEARS  -> yearsRepository.updateYear(entity.toEntityYear())
                         }
                     }
                     else if (!entity.isEmpty(type, sourceTasks)) when(type) { //entity isn exist and not empty -> create
-                        PlanCalendarType.DAYS   -> onEntityId(daysRepository.insertDay(entity.toEntityDay()))
-                        PlanCalendarType.MONTHS -> onEntityId(monthsRepository.insertMonth(entity.toEntityMonth()))
-                        PlanCalendarType.YEARS  -> onEntityId(yearsRepository.insertYear(entity.toEntityYear()))
+                        PlanCalendarType.DAYS   -> daysRepository.insertDay(entity.toEntityDay())
+                        PlanCalendarType.MONTHS -> monthsRepository.insertMonth(entity.toEntityMonth())
+                        PlanCalendarType.YEARS  -> yearsRepository.insertYear(entity.toEntityYear())
                     }
 
                     for (task in newTasks) {
@@ -358,7 +262,7 @@ class PlanCalendarViewModel @Inject constructor(
                                 PlanCalendarType.MONTHS -> monthsRepository.deleteMonthTask(task.toEntityMonth())
                                 PlanCalendarType.YEARS -> yearsRepository.deleteYearTask(task.toEntityYear())
                             }
-                            else when (type) { //new task isnt empty -> update
+                            else if(!task.isSame(sourceTasks)) when (type) { //new task isnt empty -> update
                                 PlanCalendarType.DAYS -> daysRepository.updateDayTask(task.toEntityDay())
                                 PlanCalendarType.MONTHS -> monthsRepository.updateMonthTask(task.toEntityMonth())
                                 PlanCalendarType.YEARS -> yearsRepository.updateYearTask(task.toEntityYear())

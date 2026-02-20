@@ -17,7 +17,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.planote.BackgroundDark
 import com.example.planote.view.plan.component.HeaderBlock
@@ -25,9 +24,9 @@ import com.example.planote.view.plan.component.TodayBlock
 import com.example.planote.view.plan.component.WeekBlock
 import com.example.planote.view.plan.component.calendar.CalendarBlock
 import com.example.planote.view.plan.component.calendar.CalendarDialog
+import com.example.planote.view.plan.component.calendar.CalendarDialogMode
 import com.example.planote.viewModel.plan.PlanCalendarEntityDomain
 import com.example.planote.viewModel.plan.PlanCalendarType
-import java.time.LocalDate
 
 /*****************************************************************
  * Variables, data, enum
@@ -47,13 +46,7 @@ sealed class PlannerDialogType{
         val type: PlanCalendarType,
         val mode: CalendarDialogMode
     ) : PlannerDialogType()
-
-    data class TaskDetails(
-        val date: LocalDate,
-    ) : PlannerDialogType()
 }
-
-enum class CalendarDialogMode { VIEW, EDIT }
 
 /*****************************************************************
  * Interfaces
@@ -76,22 +69,12 @@ fun PlannerPage() {
         is PlannerDialogType.None -> Unit
         is PlannerDialogType.WeekDetails -> Unit
         is PlannerDialogType.CalendarDetails -> CalendarDialog(entity = curState.entity, type = curState.type, mode = curState.mode){state -> dialogState = state}
-        is PlannerDialogType.TaskDetails -> Unit
     }
 }
-
-@Preview
-@Composable
-fun previewPlannerPage(){
-    PlannerPage()
-}
-
 
 /*****************************************************************
  * Classes
  ****************************************************************/
-
-
 /*****************************************************************
  * Preview
  ****************************************************************/

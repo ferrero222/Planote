@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import me.trishiraj.shadowglow.shadowGlow
 
 /*****************************************************************
  * Variables, data, enum
@@ -41,7 +42,15 @@ fun HeaderBlock() {
             imageVector = Icons.Filled.Dashboard,
             contentDescription = "headerIcon",
             tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(top = 9.dp, end = 25.dp).size(25.dp)
+            modifier = Modifier
+                .padding(top = 9.dp, end = 25.dp)
+                .size(25.dp)
+                .shadowGlow(
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                    offsetX = 0.dp,
+                    offsetY = 0.dp,
+                    blurRadius = 35.dp
+                ),
         )
         Text(
             text = "Панель расписания",

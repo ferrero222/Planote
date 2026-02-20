@@ -51,7 +51,7 @@ fun TodayBlock(viewModel: PlanCalendarViewModel = hiltViewModel()) {
                 text = "АКТИВНОЕ РАСПИСАНИЕ",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(top = 20.dp, bottom = 5.dp),
+                modifier = Modifier.padding(top = 20.dp, bottom = 5.dp)
             )
             Text(
                 text = "$dayOfWeek, $month ${today.dayOfMonth}",

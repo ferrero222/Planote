@@ -58,7 +58,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.planote.view.plan.CalendarDialogMode
 import com.example.planote.view.plan.PlanColorOnSurface
 import com.example.planote.view.plan.PlannerDialogType
 import com.example.planote.viewModel.plan.PlanCalendarEntityDomain
@@ -69,6 +68,7 @@ import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.DayPosition
 import com.kizitonwose.calendar.core.OutDateStyle
 import com.kizitonwose.calendar.core.daysOfWeek
+import me.trishiraj.shadowglow.shadowGlow
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.Month
@@ -88,9 +88,7 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CalendarTypeSelector(currentViewType: PlanCalendarType, onViewTypeChanged: (PlanCalendarType) -> Unit, modifier: Modifier = Modifier) {
-    SingleChoiceSegmentedButtonRow(
-        modifier = modifier
-    ) {
+    SingleChoiceSegmentedButtonRow(modifier = modifier) {
         PlanCalendarType.entries.forEach { viewType ->
             SegmentedButton(
                 shape = RoundedCornerShape(5.dp),
@@ -106,13 +104,18 @@ private fun CalendarTypeSelector(currentViewType: PlanCalendarType, onViewTypeCh
                 modifier = Modifier
                     .padding(horizontal = 10.dp)
                     .padding(top = 5.dp)
-                    .padding(bottom = 5.dp),
+                    .padding(bottom = 5.dp)
+                    .shadowGlow(
+                        color = if(viewType == currentViewType) MaterialTheme.colorScheme.primary.copy(alpha = 0.22f) else Color.Transparent,
+                        offsetX = 0.dp,
+                        offsetY = 0.dp,
+                        blurRadius = 17.dp),
             ) {
                 Text(text = when (viewType) {
-                    PlanCalendarType.DAYS   -> "Дни"
-                    PlanCalendarType.MONTHS -> "Месяцы"
-                    PlanCalendarType.YEARS  -> "Годы"
-                }
+                        PlanCalendarType.DAYS   -> "Дни"
+                        PlanCalendarType.MONTHS -> "Месяцы"
+                        PlanCalendarType.YEARS  -> "Годы"
+                    }
                 )
             }
         }
@@ -126,18 +129,18 @@ private fun DaysCalendar(viewModel: PlanCalendarViewModel, dialogStateChange: (P
     val startMonth = YearMonth.now().minusMonths(24)
     val endMonth = YearMonth.now().plusMonths(24)
     val daysOfWeek = remember { daysOfWeek() }
-    val calendarState = rememberCalendarState(startMonth = startMonth,
+    val calendarState = rememberCalendarState(
+        startMonth = startMonth,
         endMonth = endMonth,
         firstVisibleMonth = YearMonth.now(),
         firstDayOfWeek = DayOfWeek.MONDAY,
-        outDateStyle = OutDateStyle.EndOfGrid)
+        outDateStyle = OutDateStyle.EndOfGrid
+    )
     HorizontalCalendar(
         state = calendarState,
         monthHeader = { _ ->
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 12.dp)
+                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
             ) {
                 daysOfWeek.forEach { dayOfWeek ->
                     Text(
@@ -196,18 +199,13 @@ private fun DaysCalendar(viewModel: PlanCalendarViewModel, dialogStateChange: (P
                     fontSize = 15.sp,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
                     textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 6.dp)
+                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
                 )
                 Icon(
                     imageVector = Icons.Filled.CalendarViewDay,
                     contentDescription = "иконка футера",
                     tint = MaterialTheme.colorScheme.onSurface.copy(0.2f),
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = 9.dp, end = 18.dp)
-                        .size(20.dp)
+                    modifier = Modifier.align(Alignment.TopEnd).padding(top = 9.dp, end = 18.dp).size(20.dp)
                 )
             }
         }
@@ -226,9 +224,7 @@ private fun MonthsCalendar(viewModel: PlanCalendarViewModel, dialogStateChange: 
             columns = GridCells.Fixed(3),
             verticalArrangement = Arrangement.spacedBy(6.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 10.dp)
+            modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
         ) {
             items(months) { month ->
                 val curLocalDate = LocalDate.of(currentYear, month, 1)
@@ -269,18 +265,13 @@ private fun MonthsCalendar(viewModel: PlanCalendarViewModel, dialogStateChange: 
                 fontSize = 15.sp,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 10.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
             )
             Icon(
                 imageVector = Icons.Filled.CalendarViewWeek,
                 contentDescription = "иконка футера",
                 tint = MaterialTheme.colorScheme.onSurface.copy(0.2f),
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 12.dp, end = 24.dp)
-                    .size(20.dp)
+                modifier = Modifier.align(Alignment.TopEnd).padding(top = 12.dp, end = 24.dp).size(20.dp)
             )
         }
     }
@@ -298,9 +289,7 @@ private fun YearsCalendar(viewModel: PlanCalendarViewModel, dialogStateChange: (
             columns = GridCells.Fixed(4),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 10.dp)
+            modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
         ) {
             items(years) { year ->
                 val curLocalDate = LocalDate.of(year, 1, 1)
@@ -341,18 +330,13 @@ private fun YearsCalendar(viewModel: PlanCalendarViewModel, dialogStateChange: (
                 fontSize = 15.sp,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 15.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 15.dp),
             )
             Icon(
                 imageVector = Icons.Filled.CalendarViewMonth,
                 contentDescription = "fotterIcon",
                 tint = MaterialTheme.colorScheme.onSurface.copy(0.2f),
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 18.dp, end = 22.dp)
-                    .size(20.dp)
+                modifier = Modifier.align(Alignment.TopEnd).padding(top = 18.dp, end = 22.dp).size(20.dp)
             )
         }
     }
@@ -370,43 +354,28 @@ fun CalendarBlock(viewModel: PlanCalendarViewModel = hiltViewModel(), dialogStat
          shape = RoundedCornerShape(20.dp),
          elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
          colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-         modifier = Modifier
-             .fillMaxWidth()
-             .padding(vertical = 12.dp)
+         modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
     ) {
         Column(
-            modifier = Modifier
-                .padding(top = 25.dp)
-                .padding(horizontal = 25.dp)
+            modifier = Modifier.padding(top = 25.dp).padding(horizontal = 25.dp)
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(color = PlanColorOnSurface)
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(color = PlanColorOnSurface)
             ) {
-                CalendarTypeSelector(
-                    currentViewType = dataState.type, onViewTypeChanged = { newType -> viewModel.changeType(newType) }
-                )
+                CalendarTypeSelector(currentViewType = dataState.type, onViewTypeChanged = { newType -> viewModel.changeType(newType) })
             }
             Box(
-                modifier = Modifier
-                    .padding(top = 15.dp)
-                    .fillMaxWidth()
-                    .requiredHeight(400.dp)
+                modifier = Modifier.padding(top = 15.dp).fillMaxWidth().requiredHeight(400.dp)
             ) {
                 AnimatedContent(
                     targetState = dataState.type, label = "CalendarSwitchAnimation", transitionSpec = {
-                        if (targetState.ordinal > initialState.ordinal) {
-                            (slideInHorizontally { it } + fadeIn()).togetherWith(slideOutHorizontally { -it } + fadeOut())
-                        } else {
-                            (slideInHorizontally { -it } + fadeIn()).togetherWith(slideOutHorizontally { it } + fadeOut())
-                        }
+                        if (targetState.ordinal > initialState.ordinal) (slideInHorizontally { it } + fadeIn()).togetherWith(slideOutHorizontally { -it } + fadeOut())
+                        else (slideInHorizontally { -it } + fadeIn()).togetherWith(slideOutHorizontally { it } + fadeOut())
                     }
                 ) { viewType -> when (viewType) {
-                    PlanCalendarType.DAYS   -> DaysCalendar(viewModel, dialogStateChange)
-                    PlanCalendarType.MONTHS -> MonthsCalendar(viewModel, dialogStateChange)
-                    PlanCalendarType.YEARS  -> YearsCalendar(viewModel, dialogStateChange)
+                        PlanCalendarType.DAYS   -> DaysCalendar(viewModel, dialogStateChange)
+                        PlanCalendarType.MONTHS -> MonthsCalendar(viewModel, dialogStateChange)
+                        PlanCalendarType.YEARS  -> YearsCalendar(viewModel, dialogStateChange)
                     }
                 }
             }

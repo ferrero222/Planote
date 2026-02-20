@@ -43,6 +43,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -83,8 +84,8 @@ fun WeekBlock(viewModel: PlanCalendarViewModel = hiltViewModel()) {
                 text = "НЕДЕЛЬНЫЙ ПЛАН",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(top = 20.dp, bottom = 5.dp),
-                )
+                modifier = Modifier.padding(top = 20.dp, bottom = 5.dp)
+            )
             LazyRow(
                 state = lazyListState,
                 modifier = Modifier.padding(top = 5.dp, bottom = 15.dp),
@@ -120,7 +121,7 @@ fun WeekBlock(viewModel: PlanCalendarViewModel = hiltViewModel()) {
                             .height(160.dp)
                             .padding(10.dp)
                             .shadowGlow(
-                                color = if(isToday) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.0f),
+                                color = if(isToday) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else Color.Transparent,
                                 offsetX = 0.dp,
                                 offsetY = 0.dp,
                                 blurRadius = 15.dp
@@ -170,7 +171,8 @@ fun WeekBlock(viewModel: PlanCalendarViewModel = hiltViewModel()) {
                     Icon(
                         imageVector = Icons.Filled.CalendarViewWeek,
                         contentDescription = "ПОМЕНЯТЬ ПЛАН",
-                        modifier = Modifier.padding(end = 5.dp).size(18.dp),
+                        modifier = Modifier
+                            .padding(end = 5.dp).size(18.dp),
                         tint = MaterialTheme.colorScheme.primary,
                     )
                     Text(
