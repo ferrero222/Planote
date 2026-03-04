@@ -233,15 +233,20 @@ class PlanCalendarViewModel @Inject constructor(
         sourceTasks: List<PlanCalendarTaskDomain>,
         onStatusChange: (PlanCalendarLoadingStatus) -> Unit
     ){
+        var entityId = entity.id
         if(status == PlanCalendarLoadingStatus.IDLE){
             coroutineScope.launch {
                 onStatusChange(PlanCalendarLoadingStatus.PROC)
                 try {
                     if (entity.exist(type)) { //entity already exist
-                        if(entity.isEmpty(type, sourceTasks)) when(type) { //new entity is empty -> delete
-                            PlanCalendarType.DAYS   -> daysRepository.deleteDay(entity.toEntityDay())
-                            PlanCalendarType.MONTHS -> monthsRepository.deleteMonth(entity.toEntityMonth())
-                            PlanCalendarType.YEARS  -> yearsRepository.deleteYear(entity.toEntityYear())
+                        if(entity.isEmpty(type, sourceTasks) && entity.isEmpty(type, newTasks)){
+                            when(type) { //new entity is empty -> delete
+                                PlanCalendarType.DAYS   -> daysRepository.deleteDay(entity.toEntityDay())
+                                PlanCalendarType.MONTHS -> monthsRepository.deleteMonth(entity.toEntityMonth())
+                                PlanCalendarType.YEARS  -> yearsRepository.deleteYear(entity.toEntityYear())
+                            }
+                            onStatusChange(PlanCalendarLoadingStatus.DONE)
+                            return@launch
                         }
                         else if(!entity.isSame(type)) when(type) { //new entity is not empty and isnt same -> update
                             PlanCalendarType.DAYS   -> daysRepository.updateDay(entity.toEntityDay())
@@ -249,33 +254,37 @@ class PlanCalendarViewModel @Inject constructor(
                             PlanCalendarType.YEARS  -> yearsRepository.updateYear(entity.toEntityYear())
                         }
                     }
-                    else if (!entity.isEmpty(type, sourceTasks)) when(type) { //entity isn exist and not empty -> create
+                    else if (!entity.isEmpty(type, sourceTasks) || !entity.isEmpty(type, newTasks)) entityId = when(type) { //entity isn exist and not empty -> create
                         PlanCalendarType.DAYS   -> daysRepository.insertDay(entity.toEntityDay())
                         PlanCalendarType.MONTHS -> monthsRepository.insertMonth(entity.toEntityMonth())
                         PlanCalendarType.YEARS  -> yearsRepository.insertYear(entity.toEntityYear())
+                    }
+                    else {
+                        onStatusChange(PlanCalendarLoadingStatus.DONE)
+                        return@launch
                     }
 
                     for (task in newTasks) {
                         if (task.exist(sourceTasks)) { //task of entity exist
                             if (task.isEmpty()) when (type) { //new tasks is empty -> delete
-                                PlanCalendarType.DAYS -> daysRepository.deleteDayTask(task.toEntityDay())
-                                PlanCalendarType.MONTHS -> monthsRepository.deleteMonthTask(task.toEntityMonth())
-                                PlanCalendarType.YEARS -> yearsRepository.deleteYearTask(task.toEntityYear())
+                                PlanCalendarType.DAYS -> daysRepository.deleteDayTask(task.copy(ownerId = entityId).toEntityDay())
+                                PlanCalendarType.MONTHS -> monthsRepository.deleteMonthTask(task.copy(ownerId = entityId).toEntityMonth())
+                                PlanCalendarType.YEARS -> yearsRepository.deleteYearTask(task.copy(ownerId = entityId).toEntityYear())
                             }
                             else if(!task.isSame(sourceTasks)) when (type) { //new task isnt empty -> update
-                                PlanCalendarType.DAYS -> daysRepository.updateDayTask(task.toEntityDay())
-                                PlanCalendarType.MONTHS -> monthsRepository.updateMonthTask(task.toEntityMonth())
-                                PlanCalendarType.YEARS -> yearsRepository.updateYearTask(task.toEntityYear())
+                                PlanCalendarType.DAYS -> daysRepository.updateDayTask(task.copy(ownerId = entityId).toEntityDay())
+                                PlanCalendarType.MONTHS -> monthsRepository.updateMonthTask(task.copy(ownerId = entityId).toEntityMonth())
+                                PlanCalendarType.YEARS -> yearsRepository.updateYearTask(task.copy(ownerId = entityId).toEntityYear())
                             }
                         } else if (!task.isEmpty()) when (type) { //task of entity isn exist and not empty -> create
-                            PlanCalendarType.DAYS -> daysRepository.insertDayTask(task.toEntityDay())
-                            PlanCalendarType.MONTHS -> monthsRepository.insertMonthTask(task.toEntityMonth())
-                            PlanCalendarType.YEARS -> yearsRepository.insertYearTask(task.toEntityYear())
+                            PlanCalendarType.DAYS -> daysRepository.insertDayTask(task.copy(ownerId = entityId).toEntityDay())
+                            PlanCalendarType.MONTHS -> monthsRepository.insertMonthTask(task.copy(ownerId = entityId).toEntityMonth())
+                            PlanCalendarType.YEARS -> yearsRepository.insertYearTask(task.copy(ownerId = entityId).toEntityYear())
                         }
                         delay(5)
                     }
-
                     onStatusChange(PlanCalendarLoadingStatus.DONE)
+
                 } catch (e: Exception) {
                     onStatusChange(PlanCalendarLoadingStatus.DONE)
                     throw RuntimeException("Fatal DB update entity error", e)

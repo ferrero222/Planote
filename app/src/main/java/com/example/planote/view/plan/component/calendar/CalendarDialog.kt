@@ -18,9 +18,8 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.requiredHeight
-import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -52,7 +51,8 @@ data class CalendarDialogLocal(
     val entityLocal: PlanCalendarEntityDomain = PlanCalendarEntityDomain(),
     val tasksOrigin: List<PlanCalendarTaskDomain> = emptyList(),
     val tasksLocal: List<PlanCalendarTaskDomain> = emptyList(),
-    val taskEdit: PlanCalendarTaskDomain = PlanCalendarTaskDomain(),
+    val taskEditOrigin: PlanCalendarTaskDomain = PlanCalendarTaskDomain(),
+    val taskEditLocal: PlanCalendarTaskDomain = PlanCalendarTaskDomain(),
     val loadingStatus: PlanCalendarLoadingStatus = PlanCalendarLoadingStatus.IDLE,
     val savingStatus: PlanCalendarLoadingStatus = PlanCalendarLoadingStatus.IDLE,
     val deletingStatus: PlanCalendarLoadingStatus = PlanCalendarLoadingStatus.IDLE
@@ -71,12 +71,13 @@ enum class CalendarDialogMode { VIEW, EDIT, TASK }
  ****************************************************************/
 /**
  *   When we get to dialog window at the first time we will get VIEW mode and local copy
- * of the entity and tasks which for this window was opened. So, dialog gets local and
+ * of the entity and tasks which for this window was opened. We get entity from click in calendar, it
+ * could be empty entity with data or entity form BD. So, dialog gets local and
  * original data but works only with local. This local data stores in localState and passes through
- * each mode back and forward with all changes. Local data resets to original data only when we
- * getting back to VIEW mode without saving them. In EDIT mode we have opportunity to save local
- * data to BD and back to VIEW mode. WE ONLY WORK WITH LOCAL DATA AS A CACHE. All processes of
- * working with BD executes in coroutines with variable status for waiting result.
+ * each mode back and forward with all changes.
+ *   Local data resets to original data ONLY when we getting back to VIEW mode without saving them.
+ * In EDIT mode we have opportunity to save local data to BD and go back to VIEW mode with them.
+ * All processes of working with BD executes in coroutines with variable status for waiting result.
  *   There is unique situation when we are saving empty entity which does`nt exist in BD yet.
  * After saving it, entity should get correct bd ID to be able to work with bd again if we don`t
  * close dialog after saving, so wee need somehow gets back to VIEW mode ang get new ID of this
@@ -103,9 +104,8 @@ fun CalendarDialog(viewModel: PlanCalendarViewModel = hiltViewModel(), entity: P
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             modifier = Modifier
-                .fillMaxWidth()
-                .requiredWidth(340.dp)
-                .requiredHeight(650.dp)
+                .width(340.dp)
+                .height(650.dp)
         ) {
             AnimatedContent(
                 targetState = mode,
@@ -121,7 +121,7 @@ fun CalendarDialog(viewModel: PlanCalendarViewModel = hiltViewModel(), entity: P
                 currentMode -> when(currentMode){
                     CalendarDialogMode.VIEW -> CalendarDialogViewContent(localState = localState, type = type, dialogStateChange = dialogStateChange){transform -> localState = localState.run(transform)}
                     CalendarDialogMode.EDIT -> CalendarDialogEditContent(localState = localState, type = type, dialogStateChange = dialogStateChange){transform -> localState = localState.run(transform)}
-                    CalendarDialogMode.TASK -> Unit
+                    CalendarDialogMode.TASK -> CalendarDialogTaskContent(localState = localState, type = type, dialogStateChange = dialogStateChange){transform -> localState = localState.run(transform)}
                 }
             }
         }

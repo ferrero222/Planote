@@ -16,14 +16,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
@@ -152,20 +150,24 @@ private fun CalendarDialogViewContentTasks(tasks: List<PlanCalendarTaskDomain>){
         if(!tasks.isEmpty()) {
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier
-                    .heightIn(max = 200.dp)
-                    .fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
             ) {
                 items(tasks, key = { it.id }) { task ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Checkbox(
-                            checked = task.isDone,
-                            onCheckedChange = {},
-                            colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary, uncheckedColor = Color.Gray)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .offset(x = (-4).dp)
+                        ){
+                                Checkbox(
+                                checked = task.isDone,
+                                onCheckedChange = {},
+                                colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary, uncheckedColor = Color.Gray)
+                            )
+                        }
                         Text(
                             text = task.title ?: "Нет описания",
                             textDecoration = if (task.isDone) TextDecoration.LineThrough else TextDecoration.None,
@@ -240,16 +242,13 @@ fun CalendarDialogViewContent(
                 type = type,
                 onDismissClick = {dialogStateChange(PlannerDialogType.None) }
             )
-            Box(
-                modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.weight(1f).fillMaxWidth().padding(bottom = 20.dp)
             ) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    CalendarDialogViewContentDescription(entity = localState.entityLocal)
-                    CalendarDialogViewContentTasks(tasks = localState.tasksLocal,)
-                }
+                CalendarDialogViewContentDescription(entity = localState.entityLocal)
+                CalendarDialogViewContentTasks(tasks = localState.tasksLocal,)
             }
 
             CalendarDialogViewContentFooter(

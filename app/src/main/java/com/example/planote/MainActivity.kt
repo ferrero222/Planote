@@ -28,6 +28,7 @@ val Primary = Color(0xFF27C4B9)
 val BackgroundLight = Color(0xFFF5F5F5)
 val BackgroundDark = Color(0xFF0A0A0A)
 val Surface = Color(0xFF1D2828)
+val Error = Color(0xE4FF6D6D)
 
 private val LightColorScheme = lightColorScheme(
     primary = Primary,
@@ -42,6 +43,7 @@ private val DarkColorScheme = darkColorScheme(
     background = BackgroundDark,
     surface = Surface,
     onSurface = Color.White,
+    onError = Error
 )
 
 /*****************************************************************
