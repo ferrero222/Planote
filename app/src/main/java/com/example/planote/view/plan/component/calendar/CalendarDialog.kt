@@ -18,6 +18,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -96,16 +97,14 @@ fun CalendarDialog(viewModel: PlanCalendarViewModel = hiltViewModel(), entity: P
         PlanCalendarType.DAYS   -> dataState.days.find   { it.date == entity.date } ?: PlanCalendarEntityDomain(date = entity.date)
         PlanCalendarType.MONTHS -> dataState.months.find { it.date == entity.date } ?: PlanCalendarEntityDomain(date = entity.date)
     }
-    var localState by remember(_entity.date, _entity.id) { mutableStateOf(CalendarDialogLocal(entityOrigin = _entity, entityLocal = _entity)) }
+    var localState by remember(_entity) { mutableStateOf(CalendarDialogLocal(entityOrigin = _entity, entityLocal = _entity)) }
 
     Dialog(onDismissRequest = { dialogStateChange(PlannerDialogType.None) }) {
         Card(
             shape = RoundedCornerShape(20.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            modifier = Modifier
-                .width(340.dp)
-                .height(650.dp)
+            modifier = Modifier.width(340.dp).height(650.dp)
         ) {
             AnimatedContent(
                 targetState = mode,
@@ -135,7 +134,8 @@ fun CalendarLoading(status: PlanCalendarLoadingStatus, onNextContent: @Composabl
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(60.dp),
+                    .padding(top = 50.dp)
+                    .height(100.dp),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(

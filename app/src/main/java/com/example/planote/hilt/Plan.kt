@@ -13,10 +13,12 @@ import androidx.room.Room
 import com.example.planote.model.plan.repository.PlanCalendarDaysRepository
 import com.example.planote.model.plan.repository.PlanCalendarMonthsRepository
 import com.example.planote.model.plan.repository.PlanCalendarYearsRepository
+import com.example.planote.model.plan.repository.PlanWeekRepository
 import com.example.planote.model.plan.repository.source.local.room.PlanDataBase
 import com.example.planote.model.plan.repository.source.local.room.dao.PlanCalendarDaysDao
 import com.example.planote.model.plan.repository.source.local.room.dao.PlanCalendarMonthsDao
 import com.example.planote.model.plan.repository.source.local.room.dao.PlanCalendarYearsDao
+import com.example.planote.model.plan.repository.source.local.room.dao.PlanWeekDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -43,6 +45,10 @@ object PlanModuleDI {
 
     @Provides @Singleton fun providePlanCalendarYearsRepository(yearsDao: PlanCalendarYearsDao): PlanCalendarYearsRepository {
         return PlanCalendarYearsRepository(yearsDao)
+    }
+
+    @Provides @Singleton fun providePlanWeekRepository(weekDao: PlanWeekDao): PlanWeekRepository {
+        return PlanWeekRepository(weekDao)
     }
 }
 
@@ -79,5 +85,11 @@ object DatabaseModule {
     @Singleton
     fun providePlanCalendarYearsDao(database: PlanDataBase): PlanCalendarYearsDao {
         return database.daoPlanCalendarYears()
+    }
+
+    @Provides
+    @Singleton
+    fun providePlanWeekDao(database: PlanDataBase): PlanWeekDao {
+        return database.daoPlanWeek()
     }
 }

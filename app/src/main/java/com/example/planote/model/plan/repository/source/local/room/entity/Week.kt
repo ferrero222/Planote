@@ -9,9 +9,9 @@ package com.example.planote.model.plan.repository.source.local.room.entity
  * Imported packages
  ****************************************************************/
 import androidx.room.Entity
-import androidx.room.PrimaryKey
 import androidx.room.ForeignKey
 import androidx.room.Index
+import androidx.room.PrimaryKey
 import java.time.LocalDate
 
 /*****************************************************************
@@ -21,18 +21,17 @@ import java.time.LocalDate
  * Entity class for weekly plan module data in DB
  ****************************************************************/
 @Entity(tableName = "planWeek")
-data class PlanWeek(
+data class PlanWeekEntity(
     @PrimaryKey(autoGenerate = true)
     val bdId: Long = 0,
     val title: String? = null,
-    val active: Boolean = false,
-    )
+)
 
 @Entity(
     tableName = "planWeekDay",
     foreignKeys = [
         ForeignKey(
-            entity = PlanWeek::class,
+            entity = PlanWeekEntity::class,
             parentColumns = ["bdId"],
             childColumns = ["ownerId"],
             onDelete = ForeignKey.CASCADE
@@ -40,11 +39,11 @@ data class PlanWeek(
     ],
     indices = [Index(value = ["ownerId"])]
 )
-data class PlanWeekDay(
+data class PlanWeekDayEntity(
     @PrimaryKey(autoGenerate = true)
     val bdId: Long = 0,
     val ownerId: Long,
-    val title: String,
+    val title: String? = null,
     val description: String? = null,
 )
 
@@ -52,7 +51,7 @@ data class PlanWeekDay(
     tableName = "planWeekDayTask",
     foreignKeys = [
         ForeignKey(
-            entity = PlanWeekDay::class,
+            entity = PlanWeekDayEntity::class,
             parentColumns = ["bdId"],
             childColumns = ["ownerId"],
             onDelete = ForeignKey.CASCADE
@@ -60,13 +59,12 @@ data class PlanWeekDay(
     ],
     indices = [Index(value = ["ownerId"])]
 )
-data class PlanWeekDayTask(
+data class PlanWeekDayTaskEntity(
     @PrimaryKey(autoGenerate = true)
     val bdId: Long = 0,
     val ownerId: Long,
-    val title: String,
+    val title: String? = null,
+    val time: LocalDate,
     val description: String? = null,
-    val timeStart: LocalDate,
-    val timeEnd: LocalDate,
     val isDone : Boolean = false
 )

@@ -8,6 +8,11 @@ package com.example.planote.view.plan.component.calendar
 /*****************************************************************
  * Imported packages
  ****************************************************************/
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +23,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -25,6 +31,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -48,9 +55,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -77,7 +85,7 @@ import java.util.Locale
 private fun CalendarDialogEditContentHeader(entity: PlanCalendarEntityDomain, type: PlanCalendarType, onDismissClick: () -> Unit
 ) {
     Box(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
         contentAlignment = Alignment.Center
     ) {
         IconButton(
@@ -141,6 +149,7 @@ private fun CalendarDialogEditContentDescription(entity: PlanCalendarEntityDomai
             onValueChange = onTitleChange,
             textStyle = androidx.compose.ui.text.TextStyle(fontSize = 15.sp),
             shape = RoundedCornerShape(5.dp),
+            maxLines = 5,
             modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -153,14 +162,10 @@ private fun CalendarDialogEditContentDescription(entity: PlanCalendarEntityDomai
 }
 
 @Composable
-private fun CalendarDialogEditContentTasks(
-    tasks: List<PlanCalendarTaskDomain>,
-    onTaskUpdate: (PlanCalendarTaskDomain) -> Unit,
-    onTaskDelete: (PlanCalendarTaskDomain) -> Unit
+private fun CalendarDialogEditContentTasks(tasks: List<PlanCalendarTaskDomain>, onTaskUpdate: (PlanCalendarTaskDomain) -> Unit, onTaskDelete: (PlanCalendarTaskDomain) -> Unit
 ) {
-    Column(
-        modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
-    ) {
+    val listState = rememberLazyListState()
+    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)) {
         Text(
             text = "ЗАДАЧИ",
             fontSize = 12.sp,
@@ -169,77 +174,107 @@ private fun CalendarDialogEditContentTasks(
         )
 
         if (tasks.isNotEmpty()) {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier
-                    .heightIn(max = 200.dp)
-                    .fillMaxWidth()
-            ) {
-                items(
-                    tasks.filterNot { it.title.isNullOrBlank() && it.description.isNullOrBlank() }
-                ) { task ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(24.dp)
-                                .offset(x = (-4).dp)
-                        ) {
-                            Checkbox(
-                                checked = task.isDone,
-                                onCheckedChange = { newVal -> },
-                                colors = CheckboxDefaults.colors(
-                                    checkedColor = MaterialTheme.colorScheme.primary,
-                                    uncheckedColor = Color.Gray
-                                ),
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-
-                        Text(
-                            text = task.title ?: "Нет описания",
-                            textDecoration = if (task.isDone) TextDecoration.LineThrough else TextDecoration.None,
-                            color = if (task.isDone) Color.Gray else MaterialTheme.colorScheme.onSurface,
-                            fontSize = 15.sp,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(top = 4.dp)
-                        )
-
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(0.dp),
-                            modifier = Modifier.offset(x = 6.dp)
-                        ) {
-                            IconButton(
-                                onClick = { onTaskUpdate(task) },
-                                modifier = Modifier.size(32.dp),
+            Box(modifier = Modifier.heightIn(max = 230.dp)) {
+                LazyColumn(
+                    state = listState,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+                ) {
+                    items(tasks.filterNot { it.title.isNullOrBlank() && it.description.isNullOrBlank() }) { task ->
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.EditNote,
-                                    contentDescription = "Редактировать",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
+                                Box(
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Checkbox(
+                                        checked = task.isDone,
+                                        onCheckedChange = { },
+                                        colors = CheckboxDefaults.colors(
+                                            checkedColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                            uncheckedColor = MaterialTheme.colorScheme.primary,
+                                            checkmarkColor = MaterialTheme.colorScheme.surface
+                                        ),
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+
+                                Text(
+                                    text = task.title ?: "Нет описания",
+                                    color = if (task.isDone) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface,
+                                    fontSize = 15.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(start = 8.dp)
                                 )
-                            }
-                            IconButton(
-                                onClick = { onTaskDelete(task) },
-                                modifier = Modifier.size(32.dp),
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Удалить",
-                                    tint = MaterialTheme.colorScheme.onError,
-                                    modifier = Modifier.size(20.dp)
-                                )
+
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(0.dp),
+                                    modifier = Modifier.offset(x = 6.dp)
+                                ) {
+                                    IconButton(
+                                        onClick = { onTaskUpdate(task) },
+                                        modifier = Modifier.size(32.dp),
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.EditNote,
+                                            contentDescription = "Редактировать",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                    IconButton(
+                                        onClick = { onTaskDelete(task) },
+                                        modifier = Modifier.size(32.dp),
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Удалить",
+                                            tint = MaterialTheme.colorScheme.onError,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
                 }
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .animateContentSize()
+                ) {
+                    AnimatedVisibility(
+                        visible = listState.canScrollForward,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(60.dp),
+                        enter = fadeIn(animationSpec = tween(150)),
+                        exit = fadeOut(animationSpec = tween(150))
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(40.dp)
+                                .background(
+                                    Brush.verticalGradient(
+                                        colors = listOf(
+                                            Color.Transparent,
+                                            MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                                            MaterialTheme.colorScheme.surface
+                                        )
+                                    )
+                                )
+                        )
+                    }
+                }
             }
         }
-
         Box(
             modifier = Modifier.fillMaxWidth().padding(top = 5.dp),
             contentAlignment = Alignment.CenterStart
@@ -322,40 +357,35 @@ fun CalendarDialogEditContent(
             entity = localState.entityLocal,
             type = type,
             onDismissClick = {
-                dialogLocalStateChange{ copy(entityLocal = localState.entityOrigin, tasksLocal = localState.tasksOrigin, loadingStatus = PlanCalendarLoadingStatus.IDLE) }
+                dialogLocalStateChange{ copy(entityLocal = localState.entityOrigin, tasksLocal = localState.tasksOrigin) }
                 dialogStateChange(PlannerDialogType.CalendarDetails(entity = localState.entityLocal, type = type, mode = CalendarDialogMode.VIEW))
             }
         )
-
-        Box(
-            modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())
+        Column(
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+            modifier = Modifier.weight(1f).fillMaxWidth().padding(bottom = 35.dp).verticalScroll(rememberScrollState())
         ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                CalendarDialogEditContentDescription( //description
-                    entity = localState.entityLocal,
-                    onTitleChange = { newTitle ->
-                        dialogLocalStateChange { copy(entityLocal = localState.entityLocal.copy(title = newTitle)) }
+            CalendarDialogEditContentDescription( //description
+                entity = localState.entityLocal,
+                onTitleChange = { newTitle ->
+                    dialogLocalStateChange { copy(entityLocal = localState.entityLocal.copy(title = newTitle)) }
+                }
+            )
+            CalendarDialogEditContentTasks( //tasks
+                tasks = localState.tasksLocal,
+                onTaskUpdate = {task ->
+                    dialogLocalStateChange{ copy(taskEditOrigin = task, taskEditLocal = task) }
+                    dialogStateChange(PlannerDialogType.CalendarDetails(entity = localState.entityLocal, type = type, mode = CalendarDialogMode.TASK))
+                },
+                onTaskDelete = { task ->
+                    if(task.id.toInt() == 0) dialogLocalStateChange{
+                        copy(tasksLocal = tasksLocal.filter { it != task })
                     }
-                )
-                CalendarDialogEditContentTasks( //tasks
-                    tasks = localState.tasksLocal,
-                    onTaskUpdate = {task ->
-                        dialogLocalStateChange{ copy(taskEditOrigin = task, taskEditLocal = task) }
-                        dialogStateChange(PlannerDialogType.CalendarDetails(entity = localState.entityLocal, type = type, mode = CalendarDialogMode.TASK))
-                    },
-                    onTaskDelete = { task ->
-                        if(task.id.toInt() == 0) dialogLocalStateChange{
-                            copy(tasksLocal = tasksLocal.filter { it != task })
-                        }
-                        else dialogLocalStateChange{
-                            copy( tasksLocal = localState.tasksLocal.map{_task -> if (_task.id == task.id) _task.copy(title = "", description = null) else _task} )
-                        }
-                    },
-                )
-            }
+                    else dialogLocalStateChange{
+                        copy( tasksLocal = localState.tasksLocal.map{_task -> if (_task.id == task.id) _task.copy(title = "", description = null) else _task} )
+                    }
+                },
+            )
         }
 
         CalendarDialogEditContentFooter( //footer

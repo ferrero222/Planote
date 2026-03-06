@@ -61,7 +61,7 @@ import java.util.Locale
 private fun CalendarDialogTaskContentHeader(entity: PlanCalendarEntityDomain, type: PlanCalendarType, onDismissClick: () -> Unit
 ) {
     Box(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
         contentAlignment = Alignment.Center
     ) {
         IconButton(
@@ -164,11 +164,25 @@ private fun CalendarDialogTaskContentDescription(task: PlanCalendarTaskDomain, o
 
 @Composable
 private fun CalendarDialogTaskContentCheckbox(task: PlanCalendarTaskDomain, onCheckChange: (Boolean) -> Unit){
-    Checkbox(
-        checked = task.isDone,
-        onCheckedChange = { newValue -> onCheckChange(newValue) },
-        colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary, uncheckedColor = Color.Gray)
-    )
+    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)) { //Description
+        Text(
+            text = "ВЫПОЛНЕНИЕ",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(bottom = 5.dp)
+
+        )
+        Box(
+            modifier = Modifier.size(24.dp)
+        ) {
+        Checkbox(
+            checked = task.isDone,
+            onCheckedChange = { newValue -> onCheckChange(newValue) },
+            colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary, uncheckedColor = Color.Gray)
+        )
+            }
+    }
 }
 
 @Composable
@@ -228,7 +242,7 @@ fun CalendarDialogTaskContent(
             modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())
         ) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
                 CalendarDialogTaskContentTitle(

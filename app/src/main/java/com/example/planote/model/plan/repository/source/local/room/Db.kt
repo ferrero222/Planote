@@ -22,9 +22,9 @@ import com.example.planote.model.plan.repository.source.local.room.entity.PlanCa
 import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarMonthTaskEntity
 import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarYearEntity
 import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarYearTaskEntity
-import com.example.planote.model.plan.repository.source.local.room.entity.PlanWeek
-import com.example.planote.model.plan.repository.source.local.room.entity.PlanWeekDay
-import com.example.planote.model.plan.repository.source.local.room.entity.PlanWeekDayTask
+import com.example.planote.model.plan.repository.source.local.room.entity.PlanWeekDayEntity
+import com.example.planote.model.plan.repository.source.local.room.entity.PlanWeekDayTaskEntity
+import com.example.planote.model.plan.repository.source.local.room.entity.PlanWeekEntity
 import java.time.LocalDate
 
 /*****************************************************************
@@ -62,7 +62,7 @@ class Converters {
     entities = [PlanCalendarDayEntity::class, PlanCalendarDayTaskEntity::class,
                 PlanCalendarMonthEntity::class, PlanCalendarMonthTaskEntity::class,
                 PlanCalendarYearEntity::class, PlanCalendarYearTaskEntity::class,
-                PlanWeek::class, PlanWeekDay::class, PlanWeekDayTask::class],
+                PlanWeekEntity::class, PlanWeekDayEntity::class, PlanWeekDayTaskEntity::class],
     version = 1,
     exportSchema = false
 )
