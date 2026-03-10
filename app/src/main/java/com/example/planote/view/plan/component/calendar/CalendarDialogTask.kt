@@ -24,8 +24,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,7 +34,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -163,29 +160,6 @@ private fun CalendarDialogTaskContentDescription(task: PlanCalendarTaskDomain, o
 }
 
 @Composable
-private fun CalendarDialogTaskContentCheckbox(task: PlanCalendarTaskDomain, onCheckChange: (Boolean) -> Unit){
-    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)) { //Description
-        Text(
-            text = "ВЫПОЛНЕНИЕ",
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(bottom = 5.dp)
-
-        )
-        Box(
-            modifier = Modifier.size(24.dp)
-        ) {
-        Checkbox(
-            checked = task.isDone,
-            onCheckedChange = { newValue -> onCheckChange(newValue) },
-            colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary, uncheckedColor = Color.Gray)
-        )
-            }
-    }
-}
-
-@Composable
 private fun CalendarDialogTaskContentFooter(onSave: () -> Unit, onCancel: () -> Unit){
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -257,12 +231,6 @@ fun CalendarDialogTaskContent(
                         dialogLocalStateChange {  copy(taskEditLocal = localState.taskEditLocal.copy(description = newDesc)) }
                     }
                 )
-                CalendarDialogTaskContentCheckbox(
-                    task = localState.taskEditLocal,
-                    onCheckChange = { newValue ->
-                        dialogLocalStateChange { copy(taskEditLocal = localState.taskEditLocal.copy(isDone = newValue)) }
-                    }
-                )
             }
         }
 
@@ -274,7 +242,7 @@ fun CalendarDialogTaskContent(
                     }
                 }
                 else dialogLocalStateChange{
-                    copy(tasksLocal = tasksLocal.map{ if (it.id == localState.taskEditLocal.id) localState.taskEditLocal else it })
+                    copy(tasksLocal = tasksLocal.mapIndexed{index, task -> if (index == localState.taskEditLocal.index) localState.taskEditLocal else task })
                 }
                 dialogStateChange(PlannerDialogType.CalendarDetails(entity = localState.entityLocal, type = type, mode = CalendarDialogMode.EDIT))
             },

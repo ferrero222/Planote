@@ -50,10 +50,13 @@ import com.example.planote.viewModel.plan.PlanCalendarViewModel
 data class CalendarDialogLocal(
     val entityOrigin: PlanCalendarEntityDomain = PlanCalendarEntityDomain(),
     val entityLocal: PlanCalendarEntityDomain = PlanCalendarEntityDomain(),
+
     val tasksOrigin: List<PlanCalendarTaskDomain> = emptyList(),
     val tasksLocal: List<PlanCalendarTaskDomain> = emptyList(),
+
     val taskEditOrigin: PlanCalendarTaskDomain = PlanCalendarTaskDomain(),
     val taskEditLocal: PlanCalendarTaskDomain = PlanCalendarTaskDomain(),
+
     val loadingStatus: PlanCalendarLoadingStatus = PlanCalendarLoadingStatus.IDLE,
     val savingStatus: PlanCalendarLoadingStatus = PlanCalendarLoadingStatus.IDLE,
     val deletingStatus: PlanCalendarLoadingStatus = PlanCalendarLoadingStatus.IDLE
@@ -73,20 +76,25 @@ enum class CalendarDialogMode { VIEW, EDIT, TASK }
 /**
  *   When we get to dialog window at the first time we will get VIEW mode and local copy
  * of the entity and tasks which for this window was opened. We get entity from click in calendar, it
- * could be empty entity with data or entity form BD. So, dialog gets local and
+ * could be empty entity only with localDate or entity form BD. So, dialog gets local and
  * original data but works only with local. This local data stores in localState and passes through
  * each mode back and forward with all changes.
+ *
+ *   Note: All entity form DB have ID started from ID = 1, so we mentioned that ID = 0 mean empty entity
+ * which is not exist in bd for now but could be added later if needed
+ *
  *   Local data resets to original data ONLY when we getting back to VIEW mode without saving them.
  * In EDIT mode we have opportunity to save local data to BD and go back to VIEW mode with them.
  * All processes of working with BD executes in coroutines with variable status for waiting result.
- *   There is unique situation when we are saving empty entity which does`nt exist in BD yet.
- * After saving it, entity should get correct bd ID to be able to work with bd again if we don`t
+ *
+ *   There is unique situation when we are saving empty entity which does nt exist in BD yet.
+ * After saving it, entity should get correct bd ID to be able to work with bd again if we don t
  * close dialog after saving, so wee need somehow gets back to VIEW mode ang get new ID of this
  * entity from BD and save it in original and local data storages. So, for this we subscribed
  * to dataState which holds all new entity data from bd, when it changes we gets that and check if
  * entity in dataState is the same as entity of this function, if not, save new instance and reset
  * localState. Thus, we actually check if input original entity is correct and the same as in BD
- * and didn`t change while we works with that, if changed get new instance from _entity.
+ * and did nt change while we works with that, if changed get new instance from _entity.
  **/
 @OptIn(ExperimentalAnimationApi::class)
 @Composable

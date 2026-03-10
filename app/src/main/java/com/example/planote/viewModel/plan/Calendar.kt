@@ -45,7 +45,8 @@ data class PlanCalendarTaskDomain(
     val ownerId: Long = 0,
     val title: String? = null,
     val description: String? = null,
-    val isDone: Boolean = false)
+    val isDone: Boolean = false,
+    val index: Int = 0)
 
 data class PlanCalendarDataHolder(
     val days: List<PlanCalendarEntityDomain> = emptyList(),
@@ -53,8 +54,7 @@ data class PlanCalendarDataHolder(
     val years: List<PlanCalendarEntityDomain> = emptyList(),
     val isLoading: Boolean = false,
     val type: PlanCalendarType = PlanCalendarType.DAYS,
-    val error: String? = null
-)
+    val error: String? = null)
 
 enum class PlanCalendarType { DAYS, MONTHS, YEARS }
 

@@ -30,7 +30,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -162,7 +162,7 @@ private fun CalendarDialogEditContentDescription(entity: PlanCalendarEntityDomai
 }
 
 @Composable
-private fun CalendarDialogEditContentTasks(tasks: List<PlanCalendarTaskDomain>, onTaskUpdate: (PlanCalendarTaskDomain) -> Unit, onTaskDelete: (PlanCalendarTaskDomain) -> Unit
+private fun CalendarDialogEditContentTasks(tasks: List<PlanCalendarTaskDomain>, onTaskToggle: (PlanCalendarTaskDomain) -> Unit, onTaskUpdate: (PlanCalendarTaskDomain) -> Unit, onTaskDelete: (PlanCalendarTaskDomain) -> Unit
 ) {
     val listState = rememberLazyListState()
     Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)) {
@@ -180,7 +180,7 @@ private fun CalendarDialogEditContentTasks(tasks: List<PlanCalendarTaskDomain>, 
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
                 ) {
-                    items(tasks.filterNot { it.title.isNullOrBlank() && it.description.isNullOrBlank() }) { task ->
+                    itemsIndexed(tasks.filterNot { it.title.isNullOrBlank() && it.description.isNullOrBlank() }) { index, task ->
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -191,9 +191,9 @@ private fun CalendarDialogEditContentTasks(tasks: List<PlanCalendarTaskDomain>, 
                                 ) {
                                     Checkbox(
                                         checked = task.isDone,
-                                        onCheckedChange = { },
+                                        onCheckedChange = { newValue -> onTaskToggle(task.copy(isDone = newValue, index = index)) },
                                         colors = CheckboxDefaults.colors(
-                                            checkedColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                            checkedColor = MaterialTheme.colorScheme.primary,
                                             uncheckedColor = MaterialTheme.colorScheme.primary,
                                             checkmarkColor = MaterialTheme.colorScheme.surface
                                         ),
@@ -203,7 +203,7 @@ private fun CalendarDialogEditContentTasks(tasks: List<PlanCalendarTaskDomain>, 
 
                                 Text(
                                     text = task.title ?: "Нет описания",
-                                    color = if (task.isDone) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     fontSize = 15.sp,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
@@ -217,7 +217,7 @@ private fun CalendarDialogEditContentTasks(tasks: List<PlanCalendarTaskDomain>, 
                                     modifier = Modifier.offset(x = 6.dp)
                                 ) {
                                     IconButton(
-                                        onClick = { onTaskUpdate(task) },
+                                        onClick = { onTaskUpdate(task.copy(index = index)) },
                                         modifier = Modifier.size(32.dp),
                                     ) {
                                         Icon(
@@ -373,6 +373,12 @@ fun CalendarDialogEditContent(
             )
             CalendarDialogEditContentTasks( //tasks
                 tasks = localState.tasksLocal,
+                onTaskToggle = {task ->
+                    dialogLocalStateChange{
+                        copy(tasksLocal = tasksLocal.mapIndexed { index, _task -> if(index == task.index) _task.copy(isDone = task.isDone) else _task })
+                    }
+                },
+
                 onTaskUpdate = {task ->
                     dialogLocalStateChange{ copy(taskEditOrigin = task, taskEditLocal = task) }
                     dialogStateChange(PlannerDialogType.CalendarDetails(entity = localState.entityLocal, type = type, mode = CalendarDialogMode.TASK))
@@ -382,7 +388,7 @@ fun CalendarDialogEditContent(
                         copy(tasksLocal = tasksLocal.filter { it != task })
                     }
                     else dialogLocalStateChange{
-                        copy( tasksLocal = localState.tasksLocal.map{_task -> if (_task.id == task.id) _task.copy(title = "", description = null) else _task} )
+                        copy(tasksLocal = localState.tasksLocal.map{_task -> if (_task.id == task.id) _task.copy(title = "", description = null) else _task})
                     }
                 },
             )
