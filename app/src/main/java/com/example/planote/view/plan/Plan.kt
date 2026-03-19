@@ -21,12 +21,17 @@ import androidx.compose.ui.unit.dp
 import com.example.planote.BackgroundDark
 import com.example.planote.view.plan.component.HeaderBlock
 import com.example.planote.view.plan.component.TodayBlock
-import com.example.planote.view.plan.component.WeekBlock
 import com.example.planote.view.plan.component.calendar.CalendarBlock
 import com.example.planote.view.plan.component.calendar.CalendarDialog
 import com.example.planote.view.plan.component.calendar.CalendarDialogMode
+import com.example.planote.view.plan.component.week.WeekBlock
+import com.example.planote.view.plan.component.week.WeekDialogDay
+import com.example.planote.view.plan.component.week.WeekDialogDayMode
+import com.example.planote.view.plan.component.week.WeekDialogPlan
+import com.example.planote.view.plan.component.week.WeekDialogPlanMode
 import com.example.planote.viewModel.plan.PlanCalendarEntityDomain
 import com.example.planote.viewModel.plan.PlanCalendarType
+import com.example.planote.viewModel.plan.PlanWeekDayEntityDomain
 
 /*****************************************************************
  * Variables, data, enum
@@ -37,8 +42,13 @@ sealed class PlannerDialogType{
 
     data object None : PlannerDialogType()
 
-    data class WeekDetails(
-        val entity: PlanCalendarEntityDomain,
+    data class WeekDayDetails(
+        val day: PlanWeekDayEntityDomain,
+        val mode: WeekDialogDayMode
+    ) : PlannerDialogType()
+
+    data class WeekPlanDetails(
+        val mode: WeekDialogPlanMode
     ) : PlannerDialogType()
 
     data class CalendarDetails(
@@ -62,12 +72,13 @@ fun PlannerPage() {
     ) {
         item { HeaderBlock() }
         item { TodayBlock() }
-        item { WeekBlock() }
+        item { WeekBlock{state -> dialogState = state} }
         item { CalendarBlock{state -> dialogState = state} }
     }
     when (val curState = dialogState) {
         is PlannerDialogType.None -> Unit
-        is PlannerDialogType.WeekDetails -> Unit
+        is PlannerDialogType.WeekDayDetails -> WeekDialogDay(day = curState.day, mode = curState.mode){state -> dialogState = state}
+        is PlannerDialogType.WeekPlanDetails -> WeekDialogPlan(mode = curState.mode){state -> dialogState = state}
         is PlannerDialogType.CalendarDetails -> CalendarDialog(entity = curState.entity, type = curState.type, mode = curState.mode){state -> dialogState = state}
     }
 }

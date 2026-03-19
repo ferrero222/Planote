@@ -39,6 +39,6 @@ interface PlanWeekDao {
     @Delete suspend fun deleteWeekDayTask(task: PlanWeekDayTaskEntity)
 
     @Query("SELECT * FROM planWeek") fun getWeeks(): Flow<List<PlanWeekEntity>>
-    @Query("SELECT * FROM planWeekDay WHERE ownerId = :weekId") fun getWeekDays(weekId : Long): Flow<List<PlanWeekDayEntity>>
-    @Query("SELECT * FROM planWeekDayTask WHERE ownerId = :dayId") fun getWeekDayTasks(dayId : Long): Flow<List<PlanWeekDayTaskEntity>>
+    @Query("SELECT * FROM planWeekDay") fun getWeekDays(): Flow<List<PlanWeekDayEntity>>
+    @Query("SELECT * FROM planWeekDayTask") fun getWeekDayTasks(): Flow<List<PlanWeekDayTaskEntity>>
 }

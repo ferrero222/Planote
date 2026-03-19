@@ -25,6 +25,8 @@ data class PlanWeekEntity(
     @PrimaryKey(autoGenerate = true)
     val bdId: Long = 0,
     val title: String? = null,
+    val description: String? = null,
+    val isToggle: Boolean = false,
 )
 
 @Entity(
@@ -45,6 +47,7 @@ data class PlanWeekDayEntity(
     val ownerId: Long,
     val title: String? = null,
     val description: String? = null,
+    val num: Int, //0...6 days of week number
 )
 
 @Entity(

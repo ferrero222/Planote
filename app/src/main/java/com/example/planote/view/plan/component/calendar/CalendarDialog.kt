@@ -118,11 +118,8 @@ fun CalendarDialog(viewModel: PlanCalendarViewModel = hiltViewModel(), entity: P
                 targetState = mode,
                 label = "Dialog mode transition",
                 transitionSpec = {
-                    fadeIn(
-                        animationSpec = tween(220, easing = LinearEasing)
-                    ) togetherWith fadeOut(
-                        animationSpec = tween(180, easing = LinearEasing)
-                    )
+                    fadeIn(animationSpec = tween(220, easing = LinearEasing)) togetherWith
+                    fadeOut(animationSpec = tween(180, easing = LinearEasing))
                 },
             ) {
                 currentMode -> when(currentMode){
@@ -136,7 +133,7 @@ fun CalendarDialog(viewModel: PlanCalendarViewModel = hiltViewModel(), entity: P
 }
 
 @Composable
-fun CalendarLoading(status: PlanCalendarLoadingStatus, onNextContent: @Composable () -> Unit){
+fun CalendarDialogLoading(status: PlanCalendarLoadingStatus, onNextContent: @Composable () -> Unit){
     when(status){
         PlanCalendarLoadingStatus.IDLE,  PlanCalendarLoadingStatus.PROC -> {
             Box(

@@ -3,11 +3,12 @@
  *  @author Ferrero
  *  @date 21.08.2025
  ****************************************************************/
-package com.example.planote.view.plan.component.calendar
+package com.example.planote.view.plan.component.week
 
 /*****************************************************************
  * Imported packages
  ****************************************************************/
+import android.R.attr.type
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,7 +22,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DomainVerification
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -38,12 +40,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.planote.view.plan.PlannerDialogType
-import com.example.planote.viewModel.plan.PlanCalendarEntityDomain
+import com.example.planote.view.plan.component.calendar.CalendarDialogMode
 import com.example.planote.viewModel.plan.PlanCalendarTaskDomain
-import com.example.planote.viewModel.plan.PlanCalendarType
+import com.example.planote.viewModel.plan.PlanWeekDayEntityDomain
 import me.trishiraj.shadowglow.shadowGlow
-import java.time.format.TextStyle
-import java.util.Locale
 
 /*****************************************************************
  * Variables, data, enum
@@ -55,7 +55,7 @@ import java.util.Locale
  * Private functions
  ****************************************************************/
 @Composable
-private fun CalendarDialogTaskContentHeader(entity: PlanCalendarEntityDomain, type: PlanCalendarType, onDismissClick: () -> Unit
+private fun WeekDialogTaskContentHeader(onDismissClick: () -> Unit
 ) {
     Box(
         modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
@@ -66,20 +66,14 @@ private fun CalendarDialogTaskContentHeader(entity: PlanCalendarEntityDomain, ty
             modifier = Modifier.align(Alignment.CenterStart).padding(start = 10.dp).size(32.dp)
         ) {
             Icon(
-                imageVector = Icons.Filled.ArrowBackIosNew,
-                contentDescription = "Назад",
+                imageVector = Icons.Filled.Close,
+                contentDescription = "Закрыть",
                 tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(20.dp)
             )
         }
-        val month = entity.date.month.getDisplayName(TextStyle.FULL, Locale.getDefault()).replaceFirstChar { it.uppercaseChar() }
-        val textHeader = when (type) {
-            PlanCalendarType.DAYS -> "$month ${entity.date.dayOfMonth}"
-            PlanCalendarType.MONTHS -> "$month ${entity.date.year}"
-            PlanCalendarType.YEARS -> "${entity.date.year} year"
-        }
         Text(
-            text = textHeader,
+            text = "ПЛАНЫ",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -91,17 +85,17 @@ private fun CalendarDialogTaskContentHeader(entity: PlanCalendarEntityDomain, ty
                 .align(Alignment.CenterEnd)
                 .padding(end = 5.dp)
                 .background(
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
                     shape = RoundedCornerShape(15.dp)
                 )
                 .padding(horizontal = 12.dp, vertical = 5.dp)
 
         ) {
-            Text(
-                text = "EDIT",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.background
+            Icon(
+                imageVector = Icons.Filled.DomainVerification,
+                contentDescription = "План",
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(20.dp)
             )
         }
     }
@@ -194,21 +188,20 @@ private fun CalendarDialogTaskContentFooter(onSave: () -> Unit, onCancel: () -> 
 }
 
 @Composable
-fun CalendarDialogTaskContent(
-    localState: CalendarDialogLocal,
-    type: PlanCalendarType,
+fun WeekDialogChangeContent(
+    localState: WeekDialogLocal,
+    day: PlanWeekDayEntityDomain,
     dialogStateChange: (PlannerDialogType) -> Unit,
-    dialogLocalStateChange: (CalendarDialogLocal.() -> CalendarDialogLocal) -> Unit
+    dialogLocalStateChange: (WeekDialogLocal.() -> WeekDialogLocal) -> Unit
 ) {
+
     Column(
         modifier = Modifier.fillMaxSize().padding(vertical = 15.dp, horizontal = 16.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        CalendarDialogTaskContentHeader(
-            entity = localState.entityLocal,
-            type = type,
+        WeekDialogTaskContentHeader(
             onDismissClick = {
-                dialogStateChange(PlannerDialogType.CalendarDetails(entity = localState.entityLocal, type = type, mode = CalendarDialogMode.EDIT))
+                dialogStateChange(PlannerDialogType.None)
             }
         )
 
@@ -219,18 +212,11 @@ fun CalendarDialogTaskContent(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                CalendarDialogTaskContentTitle(
-                    task = localState.taskEditLocal,
-                    onTitleChange = { newTitle ->
-                        dialogLocalStateChange { copy(taskEditLocal = localState.taskEditLocal.copy(title = newTitle)) }
-                    }
-                )
-                CalendarDialogTaskContentDescription(
-                    task = localState.taskEditLocal,
-                    onDescChange = { newDesc ->
-                        dialogLocalStateChange {  copy(taskEditLocal = localState.taskEditLocal.copy(description = newDesc)) }
-                    }
-                )
+
+
+
+
+
             }
         }
 
