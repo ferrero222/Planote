@@ -25,23 +25,23 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
@@ -52,19 +52,22 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.example.planote.view.plan.PlannerDialogType
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.planote.DarkColorScheme
+import com.example.planote.viewModel.plan.PlanCalendarDialogMode
 import com.example.planote.viewModel.plan.PlanCalendarEntityDomain
-import com.example.planote.viewModel.plan.PlanCalendarLoadingStatus
+import com.example.planote.viewModel.plan.PlanCalendarLoading
 import com.example.planote.viewModel.plan.PlanCalendarTaskDomain
 import com.example.planote.viewModel.plan.PlanCalendarType
 import com.example.planote.viewModel.plan.PlanCalendarViewModel
@@ -85,18 +88,17 @@ import java.util.Locale
 private fun CalendarDialogEditContentHeader(entity: PlanCalendarEntityDomain, type: PlanCalendarType, onDismissClick: () -> Unit
 ) {
     Box(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+        modifier = Modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center
     ) {
         IconButton(
             onClick = { onDismissClick() },
-            modifier = Modifier.align(Alignment.CenterStart).padding(start = 10.dp).size(32.dp)
+            modifier = Modifier.align(Alignment.CenterStart).size(18.dp)
         ) {
             Icon(
                 imageVector = Icons.Filled.ArrowBackIosNew,
                 contentDescription = "Назад",
                 tint = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.size(20.dp)
             )
         }
         val month = entity.date.month.getDisplayName(TextStyle.FULL, Locale.getDefault()).replaceFirstChar { it.uppercaseChar() }
@@ -107,7 +109,7 @@ private fun CalendarDialogEditContentHeader(entity: PlanCalendarEntityDomain, ty
         }
         Text(
             text = textHeader,
-            fontSize = 20.sp,
+            fontSize = 19.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.align(Alignment.Center)
@@ -116,19 +118,17 @@ private fun CalendarDialogEditContentHeader(entity: PlanCalendarEntityDomain, ty
             contentAlignment = Alignment.Center,
             modifier = Modifier
                 .align(Alignment.CenterEnd)
-                .padding(end = 5.dp)
                 .background(
-                    color = MaterialTheme.colorScheme.primary,
-                    shape = RoundedCornerShape(15.dp)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(10.dp)
                 )
-                .padding(horizontal = 12.dp, vertical = 5.dp)
-
         ) {
             Text(
                 text = "EDIT",
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.background
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 10.dp)
             )
         }
     }
@@ -136,166 +136,179 @@ private fun CalendarDialogEditContentHeader(entity: PlanCalendarEntityDomain, ty
 
 @Composable
 private fun CalendarDialogEditContentDescription(entity: PlanCalendarEntityDomain, onTitleChange: (String) -> Unit){
-    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)) { //Description
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Text(
             text = "ОПИСАНИЕ",
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+            modifier = Modifier.fillMaxWidth()
         )
         OutlinedTextField(
             value = entity.title ?: "",
-            placeholder = { Text(text = "", color = MaterialTheme.colorScheme.onSurface) },
+            placeholder = { Text(text = "Введите описание", color = MaterialTheme.colorScheme.onSurface) },
             onValueChange = onTitleChange,
             textStyle = androidx.compose.ui.text.TextStyle(fontSize = 15.sp),
             shape = RoundedCornerShape(5.dp),
             maxLines = 5,
-            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                unfocusedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                focusedBorderColor = Color.Transparent,
+                unfocusedBorderColor = Color.Transparent,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
                 focusedTextColor = MaterialTheme.colorScheme.onSurface,
-            )
+                focusedContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
+                unfocusedContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
+            ),
+            trailingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Редактировать",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(15.dp)
+                )
+            }
         )
     }
 }
 
 @Composable
-private fun CalendarDialogEditContentTasks(tasks: List<PlanCalendarTaskDomain>, onTaskToggle: (PlanCalendarTaskDomain) -> Unit, onTaskUpdate: (PlanCalendarTaskDomain) -> Unit, onTaskDelete: (PlanCalendarTaskDomain) -> Unit
+private fun CalendarDialogEditContentTasks(tasks: List<PlanCalendarTaskDomain>, onTaskToggle: (PlanCalendarTaskDomain) -> Unit, onTaskEdit: (PlanCalendarTaskDomain) -> Unit, onTaskDelete: (PlanCalendarTaskDomain) -> Unit
 ) {
     val listState = rememberLazyListState()
-    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)) {
-        Text(
-            text = "ЗАДАЧИ",
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
+    Column{
+        Box(modifier = Modifier.fillMaxWidth()){
+            Text(
+                text = "ЗАДАЧИ",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                modifier = Modifier.align(Alignment.CenterStart)
+            )
+            if(tasks.isNotEmpty()){
+                Text(
+                    text = "${tasks.size} АКТИВНЫХ",
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    modifier = Modifier.align(Alignment.CenterEnd)
+                )
+            }
+        }
 
-        if (tasks.isNotEmpty()) {
-            Box(modifier = Modifier.heightIn(max = 230.dp)) {
-                LazyColumn(
-                    state = listState,
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
-                ) {
-                    itemsIndexed(tasks.filterNot { it.title.isNullOrBlank() && it.description.isNullOrBlank() }) { index, task ->
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.fillMaxWidth()
+        Box(modifier = Modifier.heightIn(max = 250.dp)) {
+            LazyColumn(
+                state = listState,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(tasks.filterNot { it.title.isNullOrBlank() && it.description.isNullOrBlank() }) { task ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f), shape = RoundedCornerShape(5.dp))
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().padding(10.dp)
+                        ) {
+                            Text(
+                                text = task.title ?: "Нет описания",
+                                color = if(task.isDone) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface,
+                                fontSize = 15.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                            IconButton(
+                                onClick = { onTaskEdit(task) },
+                                modifier = Modifier.size(20.dp),
                             ) {
-                                Box(
-                                    modifier = Modifier.size(24.dp)
-                                ) {
-                                    Checkbox(
-                                        checked = task.isDone,
-                                        onCheckedChange = { newValue -> onTaskToggle(task.copy(isDone = newValue, index = index)) },
-                                        colors = CheckboxDefaults.colors(
-                                            checkedColor = MaterialTheme.colorScheme.primary,
-                                            uncheckedColor = MaterialTheme.colorScheme.primary,
-                                            checkmarkColor = MaterialTheme.colorScheme.surface
-                                        ),
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-
-                                Text(
-                                    text = task.title ?: "Нет описания",
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    fontSize = 15.sp,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .padding(start = 8.dp)
+                                Icon(
+                                    imageVector = Icons.Default.EditNote,
+                                    contentDescription = "Редактировать",
+                                    tint = if(task.isDone) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.primary,
                                 )
+                            }
+                            IconButton(
+                                onClick = { onTaskDelete(task) },
+                                modifier = Modifier.size(20.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Удалить",
+                                    tint = if(task.isDone) MaterialTheme.colorScheme.onError.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onError,
+                                )
+                            }
 
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(0.dp),
-                                    modifier = Modifier.offset(x = 6.dp)
-                                ) {
-                                    IconButton(
-                                        onClick = { onTaskUpdate(task.copy(index = index)) },
-                                        modifier = Modifier.size(32.dp),
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.EditNote,
-                                            contentDescription = "Редактировать",
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                    IconButton(
-                                        onClick = { onTaskDelete(task) },
-                                        modifier = Modifier.size(32.dp),
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Delete,
-                                            contentDescription = "Удалить",
-                                            tint = MaterialTheme.colorScheme.onError,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                }
+                            Box(
+                                modifier = Modifier.size(20.dp)
+                            ) {
+                                Checkbox(
+                                    checked = task.isDone,
+                                    onCheckedChange = { newValue -> onTaskToggle(task.copy(isDone = newValue)) },
+                                    colors = CheckboxDefaults.colors(
+                                        checkedColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                        uncheckedColor = MaterialTheme.colorScheme.primary,
+                                        checkmarkColor = MaterialTheme.colorScheme.surface
+                                    ),
+                                )
                             }
                         }
                     }
                 }
-                Column(
+            }
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .animateContentSize()
+            ) {
+                AnimatedVisibility(
+                    visible = listState.canScrollForward,
                     modifier = Modifier
-                        .align(Alignment.BottomCenter)
                         .fillMaxWidth()
-                        .animateContentSize()
+                        .height(60.dp),
+                    enter = fadeIn(animationSpec = tween(150)),
+                    exit = fadeOut(animationSpec = tween(150))
                 ) {
-                    AnimatedVisibility(
-                        visible = listState.canScrollForward,
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(60.dp),
-                        enter = fadeIn(animationSpec = tween(150)),
-                        exit = fadeOut(animationSpec = tween(150))
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(40.dp)
-                                .background(
-                                    Brush.verticalGradient(
-                                        colors = listOf(
-                                            Color.Transparent,
-                                            MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
-                                            MaterialTheme.colorScheme.surface
-                                        )
+                            .height(60.dp)
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Transparent,
+                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                        MaterialTheme.colorScheme.surface
                                     )
                                 )
-                        )
-                    }
+                            )
+                    )
                 }
             }
         }
-        Box(
-            modifier = Modifier.fillMaxWidth().padding(top = 5.dp),
-            contentAlignment = Alignment.CenterStart
+
+        TextButton(
+            shape = RoundedCornerShape(5.dp),
+            onClick = { onTaskEdit(PlanCalendarTaskDomain()) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 6.dp)
+                .border(width = 1.dp,
+                    shape = RoundedCornerShape(5.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
         ) {
-            Button(
-                onClick = { onTaskUpdate(PlanCalendarTaskDomain()) },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.0f),
-                    contentColor = MaterialTheme.colorScheme.primary
-                ),
-                shape = RoundedCornerShape(12.dp),
-                contentPadding = PaddingValues(vertical = 8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AddCircle,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                )
-                Spacer(Modifier.width(6.dp))
-                Text("Добавить задачу", fontSize = 15.sp)
-            }
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.width(6.dp))
+            Text("Добавить задачу", fontSize = 14.sp)
         }
     }
 }
@@ -308,7 +321,7 @@ private fun CalendarDialogEditContentFooter(onSave: () -> Unit, onDelete: () -> 
         TextButton(
             shape = RoundedCornerShape(10.dp),
             onClick = { onDelete() },
-            contentPadding = PaddingValues(vertical = 14.dp),
+            contentPadding = PaddingValues(vertical = 15.dp),
             modifier = Modifier
                 .fillMaxWidth()
                 .border(width = 1.dp,
@@ -328,9 +341,15 @@ private fun CalendarDialogEditContentFooter(onSave: () -> Unit, onDelete: () -> 
                 contentColor = MaterialTheme.colorScheme.background,
                 containerColor = MaterialTheme.colorScheme.primary
             ),
-            contentPadding = PaddingValues(vertical = 14.dp),
+            contentPadding = PaddingValues(vertical = 15.dp),
             onClick = { onSave() },
-            modifier = Modifier.fillMaxWidth().shadowGlow(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f), offsetX = 0.dp, offsetY = 0.dp, blurRadius = 17.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadowGlow(
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
+                    offsetX = 0.dp,
+                    offsetY = 0.dp,
+                    blurRadius = 17.dp)
 
         ) {
             Text(text = "СОХРАНИТЬ", fontWeight = FontWeight.Bold)
@@ -338,96 +357,130 @@ private fun CalendarDialogEditContentFooter(onSave: () -> Unit, onDelete: () -> 
     }
 }
 
-
+/*****************************************************************
+ * Private functions
+ ****************************************************************/
 @Composable
-fun CalendarDialogEditContent(
-    viewModel: PlanCalendarViewModel = hiltViewModel(),
-    localState: CalendarDialogLocal,
-    type: PlanCalendarType,
-    dialogStateChange: (PlannerDialogType) -> Unit,
-    dialogLocalStateChange: (CalendarDialogLocal.() -> CalendarDialogLocal) -> Unit
-) {
-    val loadingCoroutineScope = rememberCoroutineScope()
-
-    Column(
-        modifier = Modifier.fillMaxSize().padding(vertical = 15.dp, horizontal = 16.dp),
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        CalendarDialogEditContentHeader( //header
-            entity = localState.entityLocal,
-            type = type,
-            onDismissClick = {
-                dialogLocalStateChange{ copy(entityLocal = localState.entityOrigin, tasksLocal = localState.tasksOrigin) }
-                dialogStateChange(PlannerDialogType.CalendarDetails(entity = localState.entityLocal, type = type, mode = CalendarDialogMode.VIEW))
-            }
-        )
+fun CalendarDialogEditContent(viewModel: PlanCalendarViewModel = hiltViewModel(), dialogStateChange: (PlanCalendarDialogMode) -> Unit) {
+    val calendarDialogState by viewModel.dialogState.collectAsStateWithLifecycle()
+    val calendarDataState by viewModel.dataState.collectAsStateWithLifecycle()
+    CalendarDialogLoading(calendarDialogState.loading)
+    {
         Column(
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-            modifier = Modifier.weight(1f).fillMaxWidth().padding(bottom = 35.dp).verticalScroll(rememberScrollState())
+            verticalArrangement = Arrangement.spacedBy(15.dp),
+            modifier = Modifier.fillMaxSize().padding(25.dp),
         ) {
-            CalendarDialogEditContentDescription( //description
-                entity = localState.entityLocal,
-                onTitleChange = { newTitle ->
-                    dialogLocalStateChange { copy(entityLocal = localState.entityLocal.copy(title = newTitle)) }
+            CalendarDialogEditContentHeader( //header
+                entity = calendarDialogState.entity,
+                type = calendarDataState.type,
+                onDismissClick = {
+                    viewModel.discardEntityAndTasks()
+                    if(calendarDialogState.entity.title.isNullOrEmpty() && calendarDialogState.tasks.isEmpty())
+                        dialogStateChange(PlanCalendarDialogMode.IDLE)
+                    else
+                        dialogStateChange(PlanCalendarDialogMode.VIEW)
                 }
             )
-            CalendarDialogEditContentTasks( //tasks
-                tasks = localState.tasksLocal,
-                onTaskToggle = {task ->
-                    dialogLocalStateChange{
-                        copy(tasksLocal = tasksLocal.mapIndexed { index, _task -> if(index == task.index) _task.copy(isDone = task.isDone) else _task })
-                    }
-                },
+            Column(
+                verticalArrangement = Arrangement.spacedBy(15.dp),
+                modifier = Modifier.weight(1f).fillMaxWidth()
+            ) {
+                CalendarDialogEditContentDescription( //description
+                    entity = calendarDialogState.entity,
+                    onTitleChange = { newTitle -> viewModel.updateEntity(calendarDialogState.entity.copy(title = newTitle))}
+                )
+                CalendarDialogEditContentTasks( //tasks
+                    tasks = calendarDialogState.tasks,
+                    onTaskToggle = {
+                        task -> viewModel.updateTask(task)
+                    },
+                    onTaskEdit = {task ->
+                        viewModel.loadEditTask(task)
+                        dialogStateChange(PlanCalendarDialogMode.TASK)
+                    },
+                    onTaskDelete = { task ->
+                        viewModel.deleteTask(task)
+                    },
+                )
+            }
 
-                onTaskUpdate = {task ->
-                    dialogLocalStateChange{ copy(taskEditOrigin = task, taskEditLocal = task) }
-                    dialogStateChange(PlannerDialogType.CalendarDetails(entity = localState.entityLocal, type = type, mode = CalendarDialogMode.TASK))
+            CalendarDialogEditContentFooter( //footer
+                onSave = {
+                    viewModel.saveEntityAndTasks()
+                    if(calendarDialogState.entity.title.isNullOrEmpty() && calendarDialogState.tasks.isEmpty())
+                        dialogStateChange(PlanCalendarDialogMode.IDLE)
+                    else
+                        dialogStateChange(PlanCalendarDialogMode.VIEW)
                 },
-                onTaskDelete = { task ->
-                    if(task.id.toInt() == 0) dialogLocalStateChange{
-                        copy(tasksLocal = tasksLocal.filter { it != task })
-                    }
-                    else dialogLocalStateChange{
-                        copy(tasksLocal = localState.tasksLocal.map{_task -> if (_task.id == task.id) _task.copy(title = "", description = null) else _task})
-                    }
+                onDelete = {
+                    viewModel.clearEntityAndTasks()
+                    dialogStateChange(PlanCalendarDialogMode.IDLE)
                 },
             )
         }
+    }
+}
 
-        CalendarDialogEditContentFooter( //footer
-            onSave = {
-                viewModel.updateEntityAndTasks(
-                    status = localState.savingStatus,
-                    coroutineScope = loadingCoroutineScope,
-                    type = type,
-                    entity = localState.entityLocal,
-                    newTasks = localState.tasksLocal,
-                    sourceTasks = localState.tasksOrigin,
-                    onStatusChange = { newStatus ->
-                        dialogLocalStateChange{ copy(savingStatus = newStatus, loadingStatus = PlanCalendarLoadingStatus.IDLE) }
-                        if(newStatus == PlanCalendarLoadingStatus.DONE){
-                            dialogStateChange(PlannerDialogType.CalendarDetails(entity = localState.entityLocal, type = type, mode = CalendarDialogMode.VIEW))
+/*****************************************************************
+ * Preview functions
+ ****************************************************************/
+@Preview(showBackground = true, backgroundColor = 0xFF121212)
+@Composable
+fun CalendarDialogEditContentPreview() {
+    MaterialTheme(
+        colorScheme = DarkColorScheme
+    ) {
+        Box(modifier = Modifier.fillMaxSize().padding(35.dp)){
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier
+                    .width(340.dp)
+                    .height(650.dp)
+                    .border(
+                        width = 1.dp,
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.17f)
+                    )
+            ) {
+                CalendarDialogLoading(PlanCalendarLoading.Idle)
+                {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(15.dp),
+                        modifier = Modifier.fillMaxSize().padding(25.dp),
+                    ) {
+                        CalendarDialogEditContentHeader( //header
+                            entity = PlanCalendarEntityDomain(),
+                            type = PlanCalendarType.DAYS,
+                            onDismissClick = {}
+                        )
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(15.dp),
+                            modifier = Modifier.weight(1f).fillMaxWidth()
+                        ) {
+                            CalendarDialogEditContentDescription( //description
+                                entity = PlanCalendarEntityDomain(title = "Пример описанисая"),
+                                onTitleChange = {}
+                            )
+                            CalendarDialogEditContentTasks( //tasks
+                                tasks = listOf(
+                                    PlanCalendarTaskDomain(id = 1, title = "Задача 1", description = "Основной план", isDone = true),
+                                    PlanCalendarTaskDomain(id = 2, title = "Задача 2", description = "Запасной варианfffdsfsfsdfdsfsdfdsтdsadsadsadsadad", isDone = false),
+                                    PlanCalendarTaskDomain(id = 3, title = "Задача 3", description = "", isDone = false)),
+                                onTaskToggle = {},
+                                onTaskEdit = {},
+                                onTaskDelete = {},
+                            )
                         }
-                    },
-                )
-            },
-            onDelete = {
-                viewModel.updateEntityAndTasks(
-                    status = localState.deletingStatus,
-                    coroutineScope = loadingCoroutineScope,
-                    type = type,
-                    entity = localState.entityLocal.copy(title = ""),
-                    newTasks = emptyList(),
-                    sourceTasks = emptyList(),
-                    onStatusChange = { newStatus ->
-                        dialogLocalStateChange{ copy(deletingStatus = newStatus, loadingStatus = PlanCalendarLoadingStatus.IDLE) }
-                        if(newStatus == PlanCalendarLoadingStatus.DONE){
-                            dialogLocalStateChange{ copy(entityLocal = PlanCalendarEntityDomain(date = localState.entityLocal.date), tasksLocal = emptyList()) }
-                            dialogStateChange(PlannerDialogType.CalendarDetails(entity = localState.entityLocal, type = type, mode = CalendarDialogMode.VIEW))
-                        }
-                    },
-                )
-            },
-        )
+
+                        CalendarDialogEditContentFooter( //footer
+                            onSave = {},
+                            onDelete = {},
+                        )
+                    }
+                }
+            }
+        }
     }
 }

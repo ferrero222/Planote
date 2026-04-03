@@ -8,6 +8,7 @@ package com.example.planote.view.plan.component
 /*****************************************************************
  * Imported packages
  ****************************************************************/
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -20,10 +21,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.example.planote.viewModel.plan.PlanCalendarViewModel
+import com.example.planote.DarkColorScheme
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
@@ -35,10 +36,10 @@ import java.util.Locale
  * Top Level Functions
  ****************************************************************/
 @Composable
-fun TodayBlock(viewModel: PlanCalendarViewModel = hiltViewModel()) {
+fun TodayBlock() {
     val today = LocalDate.now()
     val dayOfWeek = today.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault()).replaceFirstChar {it.uppercaseChar()}
-    val month = today.month.getDisplayName(TextStyle.SHORT, Locale.getDefault()).replaceFirstChar {it.uppercaseChar()}
+    val month = today.month.getDisplayName(TextStyle.FULL, Locale.getDefault()).replaceFirstChar {it.uppercaseChar()}
     Card(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -54,7 +55,7 @@ fun TodayBlock(viewModel: PlanCalendarViewModel = hiltViewModel()) {
                 modifier = Modifier.padding(top = 20.dp, bottom = 5.dp)
             )
             Text(
-                text = "$dayOfWeek, $month ${today.dayOfMonth}",
+                text = "$month, $dayOfWeek, ${today.dayOfMonth}",
                 fontSize = 25.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -91,3 +92,12 @@ fun TodayBlock(viewModel: PlanCalendarViewModel = hiltViewModel()) {
 /*****************************************************************
  * Preview
  ****************************************************************/
+@Preview(showBackground = true, backgroundColor = 0xFF121212)
+@Composable
+fun TodayBlockPreview(){
+    MaterialTheme( colorScheme = DarkColorScheme) {
+        Box(modifier = Modifier.padding(15.dp)){
+            TodayBlock()
+        }
+    }
+}

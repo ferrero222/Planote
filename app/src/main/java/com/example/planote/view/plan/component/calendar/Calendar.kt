@@ -58,8 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.planote.view.plan.PlanColorOnSurface
-import com.example.planote.view.plan.PlannerDialogType
+import com.example.planote.viewModel.plan.PlanCalendarDialogMode
 import com.example.planote.viewModel.plan.PlanCalendarEntityDomain
 import com.example.planote.viewModel.plan.PlanCalendarType
 import com.example.planote.viewModel.plan.PlanCalendarViewModel
@@ -123,7 +122,7 @@ private fun CalendarTypeSelector(currentViewType: PlanCalendarType, onViewTypeCh
 }
 
 @Composable
-private fun DaysCalendar(viewModel: PlanCalendarViewModel, dialogStateChange: (PlannerDialogType) -> Unit) {
+private fun DaysCalendar(viewModel: PlanCalendarViewModel, dialogStateChange: (PlanCalendarDialogMode) -> Unit) {
     val dataState by viewModel.dataState.collectAsStateWithLifecycle()
     val currentDate = LocalDate.now()
     val startMonth = YearMonth.now().minusMonths(24)
@@ -155,7 +154,8 @@ private fun DaysCalendar(viewModel: PlanCalendarViewModel, dialogStateChange: (P
         dayContent = { day ->
             val isCurrentDay = day.date == currentDate
             val curLocalDate = day.date
-            val curEntity = dataState.days.find{ it.date == curLocalDate } ?: PlanCalendarEntityDomain(date = curLocalDate)
+            val curEntityIsNew = dataState.days.find{ it.date == curLocalDate }
+            val curEntity = curEntityIsNew ?: PlanCalendarEntityDomain(date = curLocalDate)
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
@@ -167,8 +167,10 @@ private fun DaysCalendar(viewModel: PlanCalendarViewModel, dialogStateChange: (P
                         shape = CircleShape
                     )
                     .clickable {
-                        if(day.position == DayPosition.MonthDate)
-                            dialogStateChange(PlannerDialogType.CalendarDetails(entity = curEntity, type = PlanCalendarType.DAYS, mode = CalendarDialogMode.VIEW))
+                        if(day.position == DayPosition.MonthDate){
+                            viewModel.loadEntityAndTasks(curEntity, PlanCalendarType.DAYS)
+                            if(curEntityIsNew == null) dialogStateChange(PlanCalendarDialogMode.EDIT) else dialogStateChange(PlanCalendarDialogMode.VIEW)
+                        }
                     }
             ) {
                 Text(
@@ -213,7 +215,7 @@ private fun DaysCalendar(viewModel: PlanCalendarViewModel, dialogStateChange: (P
 }
 
 @Composable
-private fun MonthsCalendar(viewModel: PlanCalendarViewModel, dialogStateChange: (PlannerDialogType) -> Unit) {
+private fun MonthsCalendar(viewModel: PlanCalendarViewModel, dialogStateChange: (PlanCalendarDialogMode) -> Unit) {
     val dataState by viewModel.dataState.collectAsStateWithLifecycle()
     val currentYear = LocalDate.now().year
     val currentMonth = LocalDate.now().month
@@ -228,7 +230,8 @@ private fun MonthsCalendar(viewModel: PlanCalendarViewModel, dialogStateChange: 
         ) {
             items(months) { month ->
                 val curLocalDate = LocalDate.of(currentYear, month, 1)
-                val curEntity = dataState.months.find{ it.date == curLocalDate } ?: PlanCalendarEntityDomain(date = curLocalDate)
+                val curEntityIsNew = dataState.months.find{ it.date == curLocalDate }
+                val curEntity = curEntityIsNew ?: PlanCalendarEntityDomain(date = curLocalDate)
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
@@ -238,7 +241,10 @@ private fun MonthsCalendar(viewModel: PlanCalendarViewModel, dialogStateChange: 
                             color = if (month == currentMonth) MaterialTheme.colorScheme.primary else Color.Transparent,
                             shape = RoundedCornerShape(15.dp)
                         )
-                        .clickable { dialogStateChange(PlannerDialogType.CalendarDetails(entity = curEntity, type = PlanCalendarType.MONTHS, mode = CalendarDialogMode.VIEW)) }
+                        .clickable {
+                            viewModel.loadEntityAndTasks(curEntity, PlanCalendarType.MONTHS)
+                            if(curEntityIsNew == null) dialogStateChange(PlanCalendarDialogMode.EDIT) else dialogStateChange(PlanCalendarDialogMode.VIEW)
+                        }
                 ) {
                     Text(
                         text = month.getDisplayName(TextStyle.FULL, Locale.getDefault()).replaceFirstChar { it.uppercaseChar() },
@@ -278,7 +284,7 @@ private fun MonthsCalendar(viewModel: PlanCalendarViewModel, dialogStateChange: 
 }
 
 @Composable
-private fun YearsCalendar(viewModel: PlanCalendarViewModel, dialogStateChange: (PlannerDialogType) -> Unit) {
+private fun YearsCalendar(viewModel: PlanCalendarViewModel, dialogStateChange: (PlanCalendarDialogMode) -> Unit) {
     val dataState by viewModel.dataState.collectAsStateWithLifecycle()
     val currentYear = LocalDate.now().year
     val startYear = currentYear - 10
@@ -293,7 +299,8 @@ private fun YearsCalendar(viewModel: PlanCalendarViewModel, dialogStateChange: (
         ) {
             items(years) { year ->
                 val curLocalDate = LocalDate.of(year, 1, 1)
-                val curEntity = dataState.years.find{ it.date == curLocalDate } ?: PlanCalendarEntityDomain(date = curLocalDate)
+                val curEntityIsNew = dataState.years.find{ it.date == curLocalDate }
+                val curEntity = curEntityIsNew ?: PlanCalendarEntityDomain(date = curLocalDate)
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
@@ -303,7 +310,10 @@ private fun YearsCalendar(viewModel: PlanCalendarViewModel, dialogStateChange: (
                             color = if (year == currentYear) MaterialTheme.colorScheme.primary else Color.Transparent,
                             shape = RoundedCornerShape(10.dp)
                         )
-                        .clickable { dialogStateChange(PlannerDialogType.CalendarDetails(entity = curEntity, type = PlanCalendarType.YEARS, mode = CalendarDialogMode.VIEW)) }
+                        .clickable {
+                            viewModel.loadEntityAndTasks(curEntity, PlanCalendarType.YEARS)
+                            if(curEntityIsNew == null) dialogStateChange(PlanCalendarDialogMode.EDIT) else dialogStateChange(PlanCalendarDialogMode.VIEW)
+                        }
                 ) {
                     Text(
                         text = year.toString(),
@@ -348,7 +358,7 @@ private fun YearsCalendar(viewModel: PlanCalendarViewModel, dialogStateChange: (
  ****************************************************************/
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun CalendarBlock(viewModel: PlanCalendarViewModel = hiltViewModel(), dialogStateChange: (PlannerDialogType) -> Unit) {
+fun CalendarBlock(viewModel: PlanCalendarViewModel = hiltViewModel(), dialogStateChange: (PlanCalendarDialogMode) -> Unit) {
     val dataState by viewModel.dataState.collectAsStateWithLifecycle()
     Card(
          shape = RoundedCornerShape(20.dp),
@@ -360,7 +370,7 @@ fun CalendarBlock(viewModel: PlanCalendarViewModel = hiltViewModel(), dialogStat
             modifier = Modifier.padding(top = 25.dp).padding(horizontal = 25.dp)
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(color = PlanColorOnSurface)
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(color = MaterialTheme.colorScheme.background.copy(alpha = 0.6f))
             ) {
                 CalendarTypeSelector(currentViewType = dataState.type, onViewTypeChanged = { newType -> viewModel.changeType(newType) })
             }

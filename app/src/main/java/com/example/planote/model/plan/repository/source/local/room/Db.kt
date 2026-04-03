@@ -26,6 +26,7 @@ import com.example.planote.model.plan.repository.source.local.room.entity.PlanWe
 import com.example.planote.model.plan.repository.source.local.room.entity.PlanWeekDayTaskEntity
 import com.example.planote.model.plan.repository.source.local.room.entity.PlanWeekEntity
 import java.time.LocalDate
+import java.time.LocalTime
 
 /*****************************************************************
  * Classes
@@ -42,6 +43,16 @@ class Converters {
     @TypeConverter
     fun toLocalDate(dateString: String?): LocalDate? {
         return dateString?.let { LocalDate.parse(it) }
+    }
+
+    @TypeConverter
+    fun fromLocalTime(time: LocalTime?): String? {
+        return time?.toString()
+    }
+
+    @TypeConverter
+    fun toLocalTime(timeString: String?): LocalTime? {
+        return timeString?.let { LocalTime.parse(it) }
     }
 
     @TypeConverter

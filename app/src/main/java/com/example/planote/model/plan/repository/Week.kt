@@ -34,6 +34,6 @@ class PlanWeekRepository(private val weekDao: PlanWeekDao) {
     suspend fun deleteWeekDayTask(task: PlanWeekDayTaskEntity) = weekDao.deleteWeekDayTask(task)
 
     suspend fun getWeeks(): Flow<List<PlanWeekEntity>> = weekDao.getWeeks()
-    suspend fun getWeekDays(): Flow<List<PlanWeekDayEntity>> = weekDao.getWeekDays()
-    suspend fun getWeekDayTasks(): Flow<List<PlanWeekDayTaskEntity>> = weekDao.getWeekDayTasks()
+    suspend fun getWeekDays(weekId: Long): Flow<List<PlanWeekDayEntity>> = weekDao.getWeekDays(weekId)
+    suspend fun getWeekDayTasks(dayId: Long): Flow<List<PlanWeekDayTaskEntity>> = weekDao.getWeekDayTasks(dayId)
 }

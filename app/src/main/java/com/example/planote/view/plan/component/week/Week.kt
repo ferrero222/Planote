@@ -45,17 +45,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.planote.view.plan.PlanColorOnSurface
-import com.example.planote.view.plan.PlannerDialogType
-import com.example.planote.viewModel.plan.PlanWeekDayEntityDomain
+import com.example.planote.viewModel.plan.PlanWeekDayDomain
+import com.example.planote.viewModel.plan.PlanWeekDialogMode
 import com.example.planote.viewModel.plan.PlanWeekViewModel
 import me.trishiraj.shadowglow.shadowGlow
 import java.time.DayOfWeek
@@ -64,17 +61,24 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 /*****************************************************************
- * Top Level Functions
+ * Variables, data, enum
+ ****************************************************************/
+/*****************************************************************
+ * Interfaces
+ ****************************************************************/
+/*****************************************************************
+ * Private functions
+ ****************************************************************/
+/*****************************************************************
+ * Public functions
  ****************************************************************/
 @Composable
-fun WeekBlock(viewModel: PlanWeekViewModel = hiltViewModel(), dialogStateChange: (PlannerDialogType) -> Unit) {
-    val today = LocalDate.now()
-    val weekDays = (0..6).map { today.with(DayOfWeek.MONDAY).plusDays(it.toLong()) }
-
+fun WeekBlock(viewModel: PlanWeekViewModel = hiltViewModel(), dialogStateChange: (PlanWeekDialogMode) -> Unit) {
     val dataState by viewModel.dataState.collectAsStateWithLifecycle()
-    val weekBd = dataState.data.find{it.isToggle}
+    val isWeek = dataState.weeks.find { it.isToggle }
 
-    val todayIndex = weekDays.indexOfFirst { it == today }
+    val weekDays = (0..6).map { LocalDate.now().with(DayOfWeek.MONDAY).plusDays(it.toLong()) }
+    val todayIndex = weekDays.indexOfFirst { it == LocalDate.now() }
     val lazyListState = rememberLazyListState()
     LaunchedEffect(todayIndex) { lazyListState.animateScrollToItem(index = todayIndex) }
 
@@ -97,20 +101,13 @@ fun WeekBlock(viewModel: PlanWeekViewModel = hiltViewModel(), dialogStateChange:
                 modifier = Modifier.padding(top = 5.dp, bottom = 15.dp),
             ) {
                 itemsIndexed(weekDays) { index, date ->
-                    val isToday = date == today
-
-                    val containerColor = if (isToday) MaterialTheme.colorScheme.primary else PlanColorOnSurface
+                    val isToday = date == LocalDate.now()
+                    val containerColor = if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.background.copy(alpha = 0.6f)
                     val textColor = if (isToday) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onSurface
 
-                    val dayBd = weekBd?.days?.find{it.num == index}
-                    val dayTasks = dayBd?.tasks ?: emptyList()
-                    val dayTasksProgress = if(dayTasks.isNotEmpty()) (dayTasks.count{it.isDone}.toDouble() / dayTasks.size.toDouble()) else 0
+                    val day = dataState.days.find{it.num == index} ?: PlanWeekDayDomain(num = index)
+                    val isDay = dataState.days.contains(day)
 
-                    val iconColor = lerp(
-                        start = if(isToday) MaterialTheme.colorScheme.background.copy(0.2f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(0.5f),
-                        stop = if(isToday) MaterialTheme.colorScheme.background.copy(0.8f) else MaterialTheme.colorScheme.primary.copy(0.8f),
-                        fraction = dayTasksProgress.toFloat()
-                    )
                     val icon = when (date.dayOfWeek.value) {
                         1 -> Icons.Default.BarChart           //Mon
                         2 -> Icons.Default.BlurOn             //Tue
@@ -119,13 +116,17 @@ fun WeekBlock(viewModel: PlanWeekViewModel = hiltViewModel(), dialogStateChange:
                         5 -> Icons.Default.SsidChart          //Fri
                         6 -> Icons.Default.WebStories         //Sat
                         7 -> Icons.Default.GraphicEq          //Sun
-                        else -> {}
+                        else -> Icons.Default.CalendarViewWeek
                     }
-
                     Card(
                         onClick = {
-                            if(weekBd != null) dialogStateChange(PlannerDialogType.WeekDayDetails(day = dayBd ?: PlanWeekDayEntityDomain(num = index), mode = WeekDialogDayMode.VIEW))
-                            else dialogStateChange(PlannerDialogType.WeekPlanDetails(mode = WeekDialogPlanMode.CHANGE))
+                            if(isWeek != null){
+                                viewModel.loadDayAndTasks(day)
+                                if(isDay) dialogStateChange(PlanWeekDialogMode.DAYVIEW) else  dialogStateChange(PlanWeekDialogMode.DAYEDIT)
+                            } else {
+                                viewModel.loadWeeks()
+                                dialogStateChange(PlanWeekDialogMode.PLANADD)
+                            }
                         },
                         colors = CardDefaults.cardColors(containerColor = containerColor),
                         shape = RoundedCornerShape(25.dp),
@@ -141,9 +142,9 @@ fun WeekBlock(viewModel: PlanWeekViewModel = hiltViewModel(), dialogStateChange:
                             )
                     ) {
                         Column(
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalArrangement = Arrangement.spacedBy(3.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.fillMaxSize().padding(20.dp),
+                            modifier = Modifier.fillMaxSize().padding(23.dp),
                             ) {
                             Text(
                                 text = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()).replace(".", ""),
@@ -151,26 +152,29 @@ fun WeekBlock(viewModel: PlanWeekViewModel = hiltViewModel(), dialogStateChange:
                                 textAlign = TextAlign.Center,
                             )
                             Text(
-                                text = "$date.dayOfMonth",
+                                text = "${date.dayOfMonth}",
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.SemiBold,
                                 color = textColor,
                                 textAlign = TextAlign.Center,
-                                fontSize = 20.sp
+                                fontSize = 22.sp,
                             )
                             Icon(
-                                imageVector = icon as ImageVector,
+                                imageVector = icon,
                                 contentDescription = "Прогресс за ${date.dayOfMonth}",
-                                tint = iconColor,
-                                modifier = Modifier.size(35.dp).padding(top = 10.dp)
+                                tint = if(isToday) MaterialTheme.colorScheme.background else if(isDay) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                modifier = Modifier.size(25.dp).padding(top = 5.dp)
                             )
                         }
                     }
                 }
             }
             Button(
-                onClick = { dialogStateChange(PlannerDialogType.WeekPlanDetails(mode = WeekDialogPlanMode.CHANGE)) },
-                colors = ButtonDefaults.buttonColors(PlanColorOnSurface),
+                onClick = {
+                    viewModel.loadWeeks()
+                    if(isWeek != null) dialogStateChange(PlanWeekDialogMode.PLANCHANGE) else dialogStateChange(PlanWeekDialogMode.PLANADD)
+                },
+                colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.background.copy(alpha = 0.6f)),
                 shape = RoundedCornerShape(15.dp),
                 modifier = Modifier
                     .fillMaxWidth()

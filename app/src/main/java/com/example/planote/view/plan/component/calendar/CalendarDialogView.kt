@@ -10,14 +10,13 @@ package com.example.planote.view.plan.component.calendar
  ****************************************************************/
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,6 +28,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -41,6 +41,8 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
@@ -51,7 +53,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,12 +60,15 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.example.planote.view.plan.PlannerDialogType
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.planote.DarkColorScheme
+import com.example.planote.viewModel.plan.PlanCalendarDialogMode
 import com.example.planote.viewModel.plan.PlanCalendarEntityDomain
-import com.example.planote.viewModel.plan.PlanCalendarLoadingStatus
+import com.example.planote.viewModel.plan.PlanCalendarLoading
 import com.example.planote.viewModel.plan.PlanCalendarTaskDomain
 import com.example.planote.viewModel.plan.PlanCalendarType
 import com.example.planote.viewModel.plan.PlanCalendarViewModel
@@ -85,18 +89,17 @@ import java.util.Locale
 private fun CalendarDialogViewContentHeader(entity: PlanCalendarEntityDomain, type: PlanCalendarType, onDismissClick: () -> Unit
 ) {
     Box(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+        modifier = Modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center
     ) {
         IconButton(
             onClick = { onDismissClick() },
-            modifier = Modifier.align(Alignment.CenterStart).padding(start = 10.dp).size(32.dp)
+            modifier = Modifier.align(Alignment.CenterStart).size(20.dp)
         ) {
             Icon(
                 imageVector = Icons.Filled.Close,
                 contentDescription = "Закрыть",
                 tint = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.size(20.dp)
             )
         }
         val month = entity.date.month.getDisplayName(TextStyle.FULL, Locale.getDefault()).replaceFirstChar { it.uppercaseChar() }
@@ -107,7 +110,7 @@ private fun CalendarDialogViewContentHeader(entity: PlanCalendarEntityDomain, ty
         }
         Text(
             text = textHeader,
-            fontSize = 20.sp,
+            fontSize = 19.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.align(Alignment.Center)
@@ -116,19 +119,17 @@ private fun CalendarDialogViewContentHeader(entity: PlanCalendarEntityDomain, ty
             contentAlignment = Alignment.Center,
             modifier = Modifier
                 .align(Alignment.CenterEnd)
-                .padding(end = 5.dp)
                 .background(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(15.dp)
+                    shape = RoundedCornerShape(10.dp)
                 )
-                .padding(horizontal = 12.dp, vertical = 5.dp)
-
         ) {
             Text(
                 text = "VIEW",
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 10.dp)
             )
         }
     }
@@ -136,21 +137,28 @@ private fun CalendarDialogViewContentHeader(entity: PlanCalendarEntityDomain, ty
 
 @Composable
 private fun CalendarDialogViewContentDescription(entity: PlanCalendarEntityDomain){
-    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)) { //Description
+    if(entity.title.isNullOrEmpty()) return
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Text(
             text = "ОПИСАНИЕ",
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
         )
-        Box() {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f), shape = RoundedCornerShape(5.dp))
+        ){
             Text(
-                text = entity.title ?: "Нет данных",
+                text = entity.title,
                 fontSize = 15.sp,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 5,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 4.dp).verticalScroll(rememberScrollState())
+                modifier = Modifier.verticalScroll(rememberScrollState()).padding(10.dp)
             )
         }
     }
@@ -159,136 +167,131 @@ private fun CalendarDialogViewContentDescription(entity: PlanCalendarEntityDomai
 @Composable
 private fun CalendarDialogViewContentTasks(tasks: List<PlanCalendarTaskDomain>
 ){
+    if(tasks.isEmpty()) return
     val listState = rememberLazyListState()
-    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)) {
-        Text(
-            text = "ЗАДАЧИ",
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-        )
-
-        if(tasks.isNotEmpty()) {
-            Box {
-                LazyColumn(
-                    state = listState,
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
-                ) {
-                    items(tasks, key = { it.id }) { task ->
-                        val hasDescription = !task.description.isNullOrBlank()
-                        var expandedTaskState by remember { mutableStateOf(false) }
-                        Column(
+    Column {
+        Box(modifier = Modifier.fillMaxWidth()){
+            Text(
+                text = "ЗАДАЧИ",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                modifier = Modifier.align(Alignment.CenterStart)
+            )
+            Text(
+                text = "${tasks.size} АКТИВНЫХ",
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                modifier = Modifier.align(Alignment.CenterEnd)
+            )
+        }
+        Box {
+            LazyColumn(
+                state = listState,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(tasks, key = { it.id }) { task ->
+                    val hasDescription = !task.description.isNullOrBlank()
+                    var expandedTaskState by remember { mutableStateOf(false) }
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f), shape = RoundedCornerShape(5.dp))
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .animateContentSize(
-                                    animationSpec = spring(
-                                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                                        stiffness = Spring.StiffnessLow
-                                    )
-                                )
+                                .clickable(enabled = hasDescription) { expandedTaskState = !expandedTaskState }
+                                .padding(10.dp)
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.fillMaxWidth().clickable(enabled = hasDescription) { expandedTaskState = !expandedTaskState }
-                            ) {
-                                Box(
-                                    modifier = Modifier.size(24.dp)
-                                ) {
-                                    Checkbox(
-                                        checked = task.isDone,
-                                        onCheckedChange = {},
-                                        colors = CheckboxDefaults.colors(
-                                            checkedColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                                            uncheckedColor = MaterialTheme.colorScheme.primary,
-                                            checkmarkColor = MaterialTheme.colorScheme.surface
-                                        )
-                                    )
-                                }
-                                Text(
-                                    text = task.title ?: "Нет описания",
-                                    color = if (task.isDone) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface,
-                                    fontSize = 15.sp,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .padding(start = 8.dp)
+                            Text(
+                                text = task.title ?: "Нет описания",
+                                color = if (task.isDone) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface,
+                                fontSize = 15.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                            if (hasDescription) {
+                                Icon(
+                                    imageVector = if (expandedTaskState) Icons.Default.KeyboardArrowUp
+                                    else Icons.Default.KeyboardArrowDown,
+                                    contentDescription = if (expandedTaskState) "Свернуть" else "Развернуть",
+                                    tint = if(task.isDone) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.size(20.dp)
                                 )
-                                if (hasDescription) {
-                                    Icon(
-                                        imageVector = if (expandedTaskState) Icons.Default.KeyboardArrowUp
-                                        else Icons.Default.KeyboardArrowDown,
-                                        contentDescription = if (expandedTaskState) "Свернуть" else "Развернуть",
-                                        tint = if(task.isDone) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
                             }
-                            AnimatedVisibility(
-                                visible = expandedTaskState && hasDescription,
-                                enter = expandVertically(
-                                    expandFrom = Alignment.Top,
-                                    animationSpec = tween(durationMillis = 150)
-                                ),
-                                exit = shrinkVertically(
-                                    shrinkTowards = Alignment.Top,
-                                    animationSpec = tween(durationMillis = 150)
-                                )
+                            Box(
+                                modifier = Modifier.size(20.dp)
                             ) {
-                                Text(
-                                    text = task.description ?: "Нет",
-                                    color = if (task.isDone) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                                    fontSize = 13.sp,
-                                    lineHeight = 12.sp,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(start = 32.dp, end = 8.dp)
+                                Checkbox(
+                                    checked = task.isDone,
+                                    onCheckedChange = {},
+                                    colors = CheckboxDefaults.colors(
+                                        checkedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                        uncheckedColor = MaterialTheme.colorScheme.onSurface,
+                                        checkmarkColor = MaterialTheme.colorScheme.surface
+                                    )
                                 )
                             }
                         }
-                    }
-                }
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .animateContentSize()
-                ) {
-
-                    AnimatedVisibility(
-                        visible = listState.canScrollForward,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(60.dp),
-                        enter = fadeIn(animationSpec = tween(150)),
-                        exit = fadeOut(animationSpec = tween(150))
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(60.dp)
-                                .background(
-                                    Brush.verticalGradient(
-                                        colors = listOf(
-                                            Color.Transparent,
-                                            MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                                            MaterialTheme.colorScheme.surface
-                                        )
-                                    )
-                                )
-                        )
+                        AnimatedVisibility(
+                            visible = expandedTaskState && hasDescription,
+                            enter = expandVertically(
+                                expandFrom = Alignment.Top,
+                                animationSpec = tween(durationMillis = 300)
+                            ),
+                            exit = shrinkVertically(
+                                shrinkTowards = Alignment.Top,
+                                animationSpec = tween(durationMillis = 300)
+                            )
+                        ) {
+                            Text(
+                                text = task.description ?: "Нет",
+                                color = if (task.isDone) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                fontSize = 13.sp,
+                                maxLines = 6,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 10.dp, end = 10.dp, bottom = 10.dp)
+                            )
+                        }
                     }
                 }
             }
-        }
-        else {
-            Text(
-                "Нет данных",
-                color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 15.sp,
-                modifier = Modifier.padding(top = 4.dp)
-            )
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .animateContentSize()
+            ) {
+                AnimatedVisibility(
+                    visible = listState.canScrollForward,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(60.dp),
+                    enter = fadeIn(animationSpec = tween(150)),
+                    exit = fadeOut(animationSpec = tween(150))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(60.dp)
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Transparent,
+                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                        MaterialTheme.colorScheme.surface
+                                    )
+                                )
+                            )
+                    )
+                }
+            }
         }
     }
 }
@@ -316,48 +319,90 @@ private fun CalendarDialogViewContentFooter(onEdit: () -> Unit){
     }
 }
 
+/*****************************************************************
+ * Public functions
+ ****************************************************************/
 @Composable
-fun CalendarDialogViewContent(
-    viewModel: PlanCalendarViewModel = hiltViewModel(),
-    localState: CalendarDialogLocal,
-    type: PlanCalendarType,
-    dialogStateChange: (PlannerDialogType) -> Unit,
-    dialogLocalStateChange: (CalendarDialogLocal.() -> CalendarDialogLocal) -> Unit
-) {
-    val loadingCoroutineScope = rememberCoroutineScope()
-    viewModel.getEntityTasks(
-        status = localState.loadingStatus,
-        coroutineScope = loadingCoroutineScope,
-        type = type,
-        entity = localState.entityLocal,
-        onGetTasks = { newTasks -> dialogLocalStateChange{ copy(tasksLocal = newTasks, tasksOrigin = newTasks) }  },
-        onStatusChange = { newStatus -> dialogLocalStateChange{ copy(loadingStatus = newStatus)} },
-    )
-    CalendarLoading(localState.loadingStatus) {
+fun CalendarDialogViewContent(viewModel: PlanCalendarViewModel = hiltViewModel(), dialogStateChange: (PlanCalendarDialogMode) -> Unit) {
+    val calendarDialogState by viewModel.dialogState.collectAsStateWithLifecycle()
+    val calendarDataState by viewModel.dataState.collectAsStateWithLifecycle()
+    CalendarDialogLoading(calendarDialogState.loading) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(vertical = 15.dp, horizontal = 16.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.spacedBy(15.dp),
+            modifier = Modifier.fillMaxSize().padding(25.dp),
         ) {
             CalendarDialogViewContentHeader(
-                entity = localState.entityLocal,
-                type = type,
-                onDismissClick = {dialogStateChange(PlannerDialogType.None) }
+                entity = calendarDialogState.entity,
+                type = calendarDataState.type,
+                onDismissClick = {
+                    dialogStateChange(PlanCalendarDialogMode.IDLE)
+                }
             )
 
             Column(
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-                modifier = Modifier.weight(1f).fillMaxWidth().padding(bottom = 35.dp)
+                verticalArrangement = Arrangement.spacedBy(15.dp),
+                modifier = Modifier.weight(1f).fillMaxWidth()
             ) {
-                CalendarDialogViewContentDescription(entity = localState.entityLocal)
-                CalendarDialogViewContentTasks(tasks = localState.tasksLocal,)
+                CalendarDialogViewContentDescription(entity = calendarDialogState.entity)
+                CalendarDialogViewContentTasks(tasks = calendarDialogState.tasks)
             }
 
             CalendarDialogViewContentFooter(
-                onEdit = {
-                    dialogLocalStateChange{ copy(savingStatus = PlanCalendarLoadingStatus.IDLE, deletingStatus = PlanCalendarLoadingStatus.IDLE) }
-                    dialogStateChange(PlannerDialogType.CalendarDetails(entity = localState.entityLocal, type = type, mode = CalendarDialogMode.EDIT))
-                }
+                onEdit = { dialogStateChange(PlanCalendarDialogMode.EDIT) }
             )
+        }
+    }
+}
+
+/*****************************************************************
+ * Preview functions
+ ****************************************************************/
+@Preview(showBackground = true, backgroundColor = 0xFF121212)
+@Composable
+fun CalendarDialogViewContentPreview() {
+    MaterialTheme(
+        colorScheme = DarkColorScheme
+    ) {
+        Box(modifier = Modifier.fillMaxSize().padding(35.dp)){
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier
+                    .width(340.dp)
+                    .height(650.dp)
+                    .border(
+                        width = 1.dp,
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.17f)
+                    )
+            ) {
+                CalendarDialogLoading(PlanCalendarLoading.Idle) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(15.dp),
+                        modifier = Modifier.fillMaxSize().padding(25.dp),
+                    ) {
+                        CalendarDialogViewContentHeader(
+                            entity = PlanCalendarEntityDomain(),
+                            type = PlanCalendarType.DAYS,
+                            onDismissClick = { }
+                        )
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(15.dp),
+                            modifier = Modifier.weight(1f).fillMaxWidth()
+                        ) {
+                            CalendarDialogViewContentDescription(entity = PlanCalendarEntityDomain(title = "Пример описания тут написан"))
+                            CalendarDialogViewContentTasks(tasks = listOf(
+                                PlanCalendarTaskDomain(id = 1, title = "Задача 1", description = "Основной план", isDone = true),
+                                PlanCalendarTaskDomain(id = 2, title = "Задача 2", description = "Запасной варианfffdsfsfsdfdsfsdfdsтdsadsadsadsadad", isDone = false),
+                                PlanCalendarTaskDomain(id = 3, title = "Задача 3", description = "", isDone = false)))
+                        }
+                        CalendarDialogViewContentFooter(
+                            onEdit = { }
+                        )
+                    }
+                }
+            }
         }
     }
 }

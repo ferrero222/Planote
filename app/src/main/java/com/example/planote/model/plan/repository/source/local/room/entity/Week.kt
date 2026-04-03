@@ -12,7 +12,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import java.time.LocalDate
+import java.time.LocalTime
 
 /*****************************************************************
  * Classes
@@ -46,7 +46,6 @@ data class PlanWeekDayEntity(
     val bdId: Long = 0,
     val ownerId: Long,
     val title: String? = null,
-    val description: String? = null,
     val num: Int, //0...6 days of week number
 )
 
@@ -67,7 +66,6 @@ data class PlanWeekDayTaskEntity(
     val bdId: Long = 0,
     val ownerId: Long,
     val title: String? = null,
-    val time: LocalDate,
+    val time: LocalTime,
     val description: String? = null,
-    val isDone : Boolean = false
 )

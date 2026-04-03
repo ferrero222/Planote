@@ -20,8 +20,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.planote.DarkColorScheme
 import me.trishiraj.shadowglow.shadowGlow
 
 /*****************************************************************
@@ -49,7 +51,7 @@ fun HeaderBlock() {
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
                     offsetX = 0.dp,
                     offsetY = 0.dp,
-                    blurRadius = 35.dp
+                    blurRadius = 25.dp
                 ),
         )
         Text(
@@ -68,3 +70,12 @@ fun HeaderBlock() {
 /*****************************************************************
  * Preview
  ****************************************************************/
+@Preview(showBackground = true, backgroundColor = 0xFF121212)
+@Composable
+fun HeaderBlockPreview(){
+    MaterialTheme( colorScheme = DarkColorScheme) {
+        Box(modifier = Modifier.padding(15.dp)){
+            HeaderBlock()
+        }
+    }
+}

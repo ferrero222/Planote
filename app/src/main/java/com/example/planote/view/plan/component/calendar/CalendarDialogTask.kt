@@ -9,21 +9,25 @@ package com.example.planote.view.plan.component.calendar
  * Imported packages
  ****************************************************************/
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -32,15 +36,23 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.planote.view.plan.PlannerDialogType
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.planote.DarkColorScheme
+import com.example.planote.viewModel.plan.PlanCalendarDialogMode
 import com.example.planote.viewModel.plan.PlanCalendarEntityDomain
+import com.example.planote.viewModel.plan.PlanCalendarLoading
 import com.example.planote.viewModel.plan.PlanCalendarTaskDomain
 import com.example.planote.viewModel.plan.PlanCalendarType
+import com.example.planote.viewModel.plan.PlanCalendarViewModel
 import me.trishiraj.shadowglow.shadowGlow
 import java.time.format.TextStyle
 import java.util.Locale
@@ -58,18 +70,17 @@ import java.util.Locale
 private fun CalendarDialogTaskContentHeader(entity: PlanCalendarEntityDomain, type: PlanCalendarType, onDismissClick: () -> Unit
 ) {
     Box(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+        modifier = Modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center
     ) {
         IconButton(
             onClick = { onDismissClick() },
-            modifier = Modifier.align(Alignment.CenterStart).padding(start = 10.dp).size(32.dp)
+            modifier = Modifier.align(Alignment.CenterStart).size(18.dp)
         ) {
             Icon(
                 imageVector = Icons.Filled.ArrowBackIosNew,
                 contentDescription = "Назад",
                 tint = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.size(20.dp)
             )
         }
         val month = entity.date.month.getDisplayName(TextStyle.FULL, Locale.getDefault()).replaceFirstChar { it.uppercaseChar() }
@@ -80,7 +91,7 @@ private fun CalendarDialogTaskContentHeader(entity: PlanCalendarEntityDomain, ty
         }
         Text(
             text = textHeader,
-            fontSize = 20.sp,
+            fontSize = 19.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.align(Alignment.Center)
@@ -89,19 +100,17 @@ private fun CalendarDialogTaskContentHeader(entity: PlanCalendarEntityDomain, ty
             contentAlignment = Alignment.Center,
             modifier = Modifier
                 .align(Alignment.CenterEnd)
-                .padding(end = 5.dp)
                 .background(
-                    color = MaterialTheme.colorScheme.primary,
-                    shape = RoundedCornerShape(15.dp)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(10.dp)
                 )
-                .padding(horizontal = 12.dp, vertical = 5.dp)
-
         ) {
             Text(
                 text = "EDIT",
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.background
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 10.dp)
             )
         }
     }
@@ -109,52 +118,76 @@ private fun CalendarDialogTaskContentHeader(entity: PlanCalendarEntityDomain, ty
 
 @Composable
 private fun CalendarDialogTaskContentTitle(task: PlanCalendarTaskDomain, onTitleChange: (String) -> Unit){
-    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)) { //Description
+    Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = "ЗАГОЛОВОК",
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+            modifier = Modifier.fillMaxWidth()
         )
         OutlinedTextField(
             value = task.title ?: "",
-            placeholder = { Text(text = "", color = MaterialTheme.colorScheme.onSurface) },
+            placeholder = { Text(text = "Введите заголовок", color = MaterialTheme.colorScheme.onSurface) },
             onValueChange = onTitleChange,
             textStyle = androidx.compose.ui.text.TextStyle(fontSize = 15.sp),
             shape = RoundedCornerShape(5.dp),
-            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            maxLines = 5,
+            modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                unfocusedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                focusedBorderColor = Color.Transparent,
+                unfocusedBorderColor = Color.Transparent,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
                 focusedTextColor = MaterialTheme.colorScheme.onSurface,
-            )
+                focusedContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
+                unfocusedContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
+            ),
+            trailingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Редактировать",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(15.dp)
+                )
+            }
         )
     }
 }
 
 @Composable
 private fun CalendarDialogTaskContentDescription(task: PlanCalendarTaskDomain, onDescChange: (String) -> Unit){
-    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)) { //Description
+    Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = "ОПИСАНИЕ",
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+            modifier = Modifier.fillMaxWidth()
         )
         OutlinedTextField(
             value = task.description ?: "",
-            placeholder = { Text(text = "", color = MaterialTheme.colorScheme.onSurface) },
+            placeholder = { Text(text = "Введите описание", color = MaterialTheme.colorScheme.onSurface) },
             onValueChange = onDescChange,
             textStyle = androidx.compose.ui.text.TextStyle(fontSize = 15.sp),
             shape = RoundedCornerShape(5.dp),
-            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            maxLines = 5,
+            modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                unfocusedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                focusedBorderColor = Color.Transparent,
+                unfocusedBorderColor = Color.Transparent,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
                 focusedTextColor = MaterialTheme.colorScheme.onSurface,
-            )
+                focusedContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
+                unfocusedContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
+            ),
+            trailingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Редактировать",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(15.dp)
+                )
+            }
         )
     }
 }
@@ -167,9 +200,8 @@ private fun CalendarDialogTaskContentFooter(onSave: () -> Unit, onCancel: () -> 
         TextButton(
             shape = RoundedCornerShape(10.dp),
             onClick = { onCancel() },
-            contentPadding = PaddingValues(vertical = 14.dp),
-            modifier = Modifier
-                .fillMaxWidth()
+            contentPadding = PaddingValues(vertical = 15.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
             Text(
                 text = "ОТМЕНИТЬ",
@@ -183,72 +215,124 @@ private fun CalendarDialogTaskContentFooter(onSave: () -> Unit, onCancel: () -> 
                 contentColor = MaterialTheme.colorScheme.background,
                 containerColor = MaterialTheme.colorScheme.primary
             ),
-            contentPadding = PaddingValues(vertical = 14.dp),
+            contentPadding = PaddingValues(vertical = 15.dp),
             onClick = { onSave() },
             modifier = Modifier.fillMaxWidth().shadowGlow(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f), offsetX = 0.dp, offsetY = 0.dp, blurRadius = 17.dp)
 
         ) {
-            Text(text = "СОХРАНИТЬ", fontWeight = FontWeight.Bold)
+            Text(text = "ДОБАВИТЬ", fontWeight = FontWeight.Bold)
         }
     }
 }
 
+/*****************************************************************
+ * Public functions
+ ****************************************************************/
 @Composable
-fun CalendarDialogTaskContent(
-    localState: CalendarDialogLocal,
-    type: PlanCalendarType,
-    dialogStateChange: (PlannerDialogType) -> Unit,
-    dialogLocalStateChange: (CalendarDialogLocal.() -> CalendarDialogLocal) -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(vertical = 15.dp, horizontal = 16.dp),
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        CalendarDialogTaskContentHeader(
-            entity = localState.entityLocal,
-            type = type,
-            onDismissClick = {
-                dialogStateChange(PlannerDialogType.CalendarDetails(entity = localState.entityLocal, type = type, mode = CalendarDialogMode.EDIT))
-            }
-        )
-
-        Box(
-            modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())
+fun CalendarDialogTaskContent(viewModel: PlanCalendarViewModel = hiltViewModel(), dialogStateChange: (PlanCalendarDialogMode) -> Unit) {
+    val calendarDialogState by viewModel.dialogState.collectAsStateWithLifecycle()
+    val calendarDataState by viewModel.dataState.collectAsStateWithLifecycle()
+    CalendarDialogLoading(calendarDialogState.loading) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(15.dp),
+            modifier = Modifier.fillMaxSize().padding(25.dp),
         ) {
+            CalendarDialogTaskContentHeader(
+                entity = calendarDialogState.entity,
+                type = calendarDataState.type,
+                onDismissClick = {
+                    viewModel.discardEditTask()
+                    dialogStateChange(PlanCalendarDialogMode.EDIT)
+                }
+            )
+
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxSize()
+                verticalArrangement = Arrangement.spacedBy(15.dp),
+                modifier = Modifier.weight(1f).fillMaxWidth()
             ) {
                 CalendarDialogTaskContentTitle(
-                    task = localState.taskEditLocal,
+                    task = calendarDialogState.editingTask,
                     onTitleChange = { newTitle ->
-                        dialogLocalStateChange { copy(taskEditLocal = localState.taskEditLocal.copy(title = newTitle)) }
+                        viewModel.updateEditTask(calendarDialogState.editingTask.copy(title = newTitle))
                     }
                 )
                 CalendarDialogTaskContentDescription(
-                    task = localState.taskEditLocal,
+                    task = calendarDialogState.editingTask,
                     onDescChange = { newDesc ->
-                        dialogLocalStateChange {  copy(taskEditLocal = localState.taskEditLocal.copy(description = newDesc)) }
+                        viewModel.updateEditTask(calendarDialogState.editingTask.copy(description = newDesc))
                     }
                 )
             }
-        }
 
-        CalendarDialogTaskContentFooter(
-            onSave = {
-                if(localState.taskEditOrigin.id.toInt() == 0 && localState.taskEditOrigin.description.isNullOrBlank() && localState.taskEditOrigin.title.isNullOrBlank()){
-                    dialogLocalStateChange{
-                        copy( tasksLocal = tasksLocal + localState.taskEditLocal)
+            CalendarDialogTaskContentFooter(
+                onSave = {
+                    viewModel.saveEditTask()
+                    dialogStateChange(PlanCalendarDialogMode.EDIT)
+                },
+                onCancel = {
+                    viewModel.discardEditTask()
+                    dialogStateChange(PlanCalendarDialogMode.EDIT)
+                },
+            )
+        }
+    }
+}
+
+/*****************************************************************
+ * Preview functions
+ ****************************************************************/
+@Preview(showBackground = true, backgroundColor = 0xFF121212)
+@Composable
+fun CalendarDialogTaskContentPreview() {
+    MaterialTheme(
+        colorScheme = DarkColorScheme
+    ) {
+        Box(modifier = Modifier.fillMaxSize().padding(35.dp)){
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier
+                    .width(340.dp)
+                    .height(650.dp)
+                    .border(
+                        width = 1.dp,
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.17f)
+                    )
+            ) {
+                CalendarDialogLoading(PlanCalendarLoading.Idle) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(15.dp),
+                        modifier = Modifier.fillMaxSize().padding(25.dp),
+                    ) {
+                        CalendarDialogTaskContentHeader(
+                            entity = PlanCalendarEntityDomain(),
+                            type = PlanCalendarType.DAYS,
+                            onDismissClick = {}
+                        )
+
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(15.dp),
+                            modifier = Modifier.weight(1f).fillMaxWidth()
+                        ) {
+                            CalendarDialogTaskContentTitle(
+                                task = PlanCalendarTaskDomain(id = 1, title = "Задача 1", description = "Основной план", isDone = true),
+                                onTitleChange = {}
+                            )
+                            CalendarDialogTaskContentDescription(
+                                task = PlanCalendarTaskDomain(id = 1, title = "Задача 1", description = "Основной план", isDone = true),
+                                onDescChange = {}
+                            )
+                        }
+
+                        CalendarDialogTaskContentFooter(
+                            onSave = {},
+                            onCancel = {},
+                        )
                     }
                 }
-                else dialogLocalStateChange{
-                    copy(tasksLocal = tasksLocal.mapIndexed{index, task -> if (index == localState.taskEditLocal.index) localState.taskEditLocal else task })
-                }
-                dialogStateChange(PlannerDialogType.CalendarDetails(entity = localState.entityLocal, type = type, mode = CalendarDialogMode.EDIT))
-            },
-            onCancel = {
-                dialogStateChange(PlannerDialogType.CalendarDetails(entity = localState.entityLocal, type = type, mode = CalendarDialogMode.EDIT))
-            },
-        )
+            }
+        }
     }
 }

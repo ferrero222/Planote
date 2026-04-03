@@ -3,7 +3,7 @@
  *  @author Ferrero
  *  @date 21.08.2025
  ****************************************************************/
-package com.example.planote.view.plan.component.calendar
+package com.example.planote.view.plan.component.week
 
 /*****************************************************************
  * Imported packages
@@ -32,8 +32,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import com.example.planote.viewModel.plan.PlanCalendarDialogMode
-import com.example.planote.viewModel.plan.PlanCalendarLoading
+import com.example.planote.viewModel.plan.PlanWeekDialogMode
+import com.example.planote.viewModel.plan.PlanWeekLoading
 
 /*****************************************************************
  * Variables, data, enum
@@ -49,9 +49,9 @@ import com.example.planote.viewModel.plan.PlanCalendarLoading
  ****************************************************************/
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun CalendarDialog(dialogState : PlanCalendarDialogMode, dialogStateChange: (PlanCalendarDialogMode) -> Unit) {
-    if(dialogState != PlanCalendarDialogMode.IDLE) {
-        Dialog(onDismissRequest = { dialogStateChange(PlanCalendarDialogMode.IDLE) }) {
+fun WeekDialog(dialogState : PlanWeekDialogMode, dialogStateChange: (PlanWeekDialogMode) -> Unit) {
+    if(dialogState != PlanWeekDialogMode.IDLE) {
+        Dialog(onDismissRequest = { dialogStateChange(PlanWeekDialogMode.IDLE) }) {
             Card(
                 shape = RoundedCornerShape(20.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -70,10 +70,12 @@ fun CalendarDialog(dialogState : PlanCalendarDialogMode, dialogStateChange: (Pla
                     },
                 ) { currentMode ->
                     when (currentMode) {
-                        PlanCalendarDialogMode.VIEW -> CalendarDialogViewContent(dialogStateChange = dialogStateChange)
-                        PlanCalendarDialogMode.EDIT -> CalendarDialogEditContent(dialogStateChange = dialogStateChange)
-                        PlanCalendarDialogMode.TASK -> CalendarDialogTaskContent(dialogStateChange = dialogStateChange)
-                        PlanCalendarDialogMode.IDLE -> return@AnimatedContent
+                        PlanWeekDialogMode.DAYVIEW ->    { WeekDialogDayViewContent(dialogStateChange = dialogStateChange) }
+                        PlanWeekDialogMode.DAYEDIT ->    { WeekDialogDayEditContent(dialogStateChange = dialogStateChange) }
+                        PlanWeekDialogMode.DAYTASK ->    { WeekDialogDayTaskContent(dialogStateChange = dialogStateChange) }
+                        PlanWeekDialogMode.PLANCHANGE -> { WeekDialogPlanChangeContent(dialogStateChange = dialogStateChange) }
+                        PlanWeekDialogMode.PLANADD ->    { WeekDialogPlanAddContent(dialogStateChange = dialogStateChange)}
+                        PlanWeekDialogMode.IDLE ->       return@AnimatedContent
                     }
                 }
             }
@@ -82,14 +84,14 @@ fun CalendarDialog(dialogState : PlanCalendarDialogMode, dialogStateChange: (Pla
 }
 
 @Composable
-fun CalendarDialogLoading(
-    status: PlanCalendarLoading,
+fun WeekDialogLoading(
+    status: PlanWeekLoading,
     onContent: @Composable () -> Unit
 ) {
     val isLoading = when (status) {
-        is PlanCalendarLoading.Loading,
-        is PlanCalendarLoading.Saving,
-        is PlanCalendarLoading.Deleting -> true
+        is PlanWeekLoading.Loading,
+        is PlanWeekLoading.Saving,
+        is PlanWeekLoading.Deleting -> true
         else -> false
     }
     AnimatedContent(
