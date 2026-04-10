@@ -53,6 +53,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -65,6 +68,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.planote.DarkColorScheme
+import com.example.planote.MyAppFont
+import com.example.planote.viewModel.plan.PlanCalendarDialogDataHolder
 import com.example.planote.viewModel.plan.PlanCalendarDialogMode
 import com.example.planote.viewModel.plan.PlanCalendarEntityDomain
 import com.example.planote.viewModel.plan.PlanCalendarLoading
@@ -78,6 +83,13 @@ import java.util.Locale
 /*****************************************************************
  * Variables, data, enum
  ****************************************************************/
+sealed class CalendarDialogEditAlert {
+    object None : CalendarDialogEditAlert()
+    object DiscardChanges : CalendarDialogEditAlert()
+    object DeleteEntity : CalendarDialogEditAlert()
+    data class DeleteTask(val task: PlanCalendarTaskDomain) : CalendarDialogEditAlert()
+}
+
 /*****************************************************************
  * Interfaces
  ****************************************************************/
@@ -85,7 +97,10 @@ import java.util.Locale
  * Private functions
  ****************************************************************/
 @Composable
-private fun CalendarDialogEditContentHeader(entity: PlanCalendarEntityDomain, type: PlanCalendarType, onDismissClick: () -> Unit
+private fun CalendarDialogEditContentHeader(
+    entity: PlanCalendarEntityDomain,
+    type: PlanCalendarType,
+    onDismissClick: () -> Unit
 ) {
     Box(
         modifier = Modifier.fillMaxWidth(),
@@ -135,7 +150,10 @@ private fun CalendarDialogEditContentHeader(entity: PlanCalendarEntityDomain, ty
 }
 
 @Composable
-private fun CalendarDialogEditContentDescription(entity: PlanCalendarEntityDomain, onTitleChange: (String) -> Unit){
+private fun CalendarDialogEditContentDescription(
+    entity: PlanCalendarEntityDomain,
+    onTitleChange: (String) -> Unit
+){
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -175,7 +193,74 @@ private fun CalendarDialogEditContentDescription(entity: PlanCalendarEntityDomai
 }
 
 @Composable
-private fun CalendarDialogEditContentTasks(tasks: List<PlanCalendarTaskDomain>, onTaskToggle: (PlanCalendarTaskDomain) -> Unit, onTaskEdit: (PlanCalendarTaskDomain) -> Unit, onTaskDelete: (PlanCalendarTaskDomain) -> Unit
+private fun CalendarDialogEditContentTasksItem(
+    task: PlanCalendarTaskDomain,
+    onTaskToggle: (PlanCalendarTaskDomain) -> Unit,
+    onTaskEdit: (PlanCalendarTaskDomain) -> Unit,
+    onTaskDelete: (PlanCalendarTaskDomain) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f), shape = RoundedCornerShape(5.dp))
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().padding(10.dp)
+        ) {
+            Text(
+                text = task.title ?: "Нет описания",
+                color = if(task.isDone) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface,
+                fontSize = 15.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            IconButton(
+                onClick = { onTaskEdit(task) },
+                modifier = Modifier.size(20.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.EditNote,
+                    contentDescription = "Редактировать",
+                    tint = if(task.isDone) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.primary,
+                )
+            }
+            IconButton(
+                onClick = { onTaskDelete(task) },
+                modifier = Modifier.size(20.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Удалить",
+                    tint = if(task.isDone) MaterialTheme.colorScheme.onError.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onError,
+                )
+            }
+
+            Box(
+                modifier = Modifier.size(20.dp)
+            ) {
+                Checkbox(
+                    checked = task.isDone,
+                    onCheckedChange = { newValue -> onTaskToggle(task.copy(isDone = newValue)) },
+                    colors = CheckboxDefaults.colors(
+                        checkedColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                        uncheckedColor = MaterialTheme.colorScheme.primary,
+                        checkmarkColor = MaterialTheme.colorScheme.surface
+                    ),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CalendarDialogEditContentTasks(
+    tasks: List<PlanCalendarTaskDomain>,
+    onTaskToggle: (PlanCalendarTaskDomain) -> Unit,
+    onTaskEdit: (PlanCalendarTaskDomain) -> Unit,
+    onTaskDelete: (PlanCalendarTaskDomain) -> Unit
 ) {
     val listState = rememberLazyListState()
     Column{
@@ -204,60 +289,12 @@ private fun CalendarDialogEditContentTasks(tasks: List<PlanCalendarTaskDomain>, 
                 modifier = Modifier.fillMaxWidth()
             ) {
                 items(tasks.filterNot { it.title.isNullOrBlank() && it.description.isNullOrBlank() }) { task ->
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f), shape = RoundedCornerShape(5.dp))
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth().padding(10.dp)
-                        ) {
-                            Text(
-                                text = task.title ?: "Нет описания",
-                                color = if(task.isDone) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface,
-                                fontSize = 15.sp,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f)
-                            )
-                            IconButton(
-                                onClick = { onTaskEdit(task) },
-                                modifier = Modifier.size(20.dp),
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.EditNote,
-                                    contentDescription = "Редактировать",
-                                    tint = if(task.isDone) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.primary,
-                                )
-                            }
-                            IconButton(
-                                onClick = { onTaskDelete(task) },
-                                modifier = Modifier.size(20.dp),
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Удалить",
-                                    tint = if(task.isDone) MaterialTheme.colorScheme.onError.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onError,
-                                )
-                            }
-
-                            Box(
-                                modifier = Modifier.size(20.dp)
-                            ) {
-                                Checkbox(
-                                    checked = task.isDone,
-                                    onCheckedChange = { newValue -> onTaskToggle(task.copy(isDone = newValue)) },
-                                    colors = CheckboxDefaults.colors(
-                                        checkedColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                                        uncheckedColor = MaterialTheme.colorScheme.primary,
-                                        checkmarkColor = MaterialTheme.colorScheme.surface
-                                    ),
-                                )
-                            }
-                        }
-                    }
+                    CalendarDialogEditContentTasksItem(
+                        task = task,
+                        onTaskToggle = onTaskToggle,
+                        onTaskEdit = onTaskEdit,
+                        onTaskDelete = onTaskDelete
+                    )
                 }
             }
             Column(
@@ -314,7 +351,10 @@ private fun CalendarDialogEditContentTasks(tasks: List<PlanCalendarTaskDomain>, 
 }
 
 @Composable
-private fun CalendarDialogEditContentFooter(onSave: () -> Unit, onDelete: () -> Unit){
+private fun CalendarDialogEditContentFooter(
+    onSave: () -> Unit,
+    onDelete: () -> Unit
+){
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -361,10 +401,78 @@ private fun CalendarDialogEditContentFooter(onSave: () -> Unit, onDelete: () -> 
  * Private functions
  ****************************************************************/
 @Composable
-fun CalendarDialogEditContent(viewModel: PlanCalendarViewModel = hiltViewModel(), dialogStateChange: (PlanCalendarDialogMode) -> Unit) {
+private fun CalendarDialogEditAlertHandler(
+    calendarDialogAlert: CalendarDialogEditAlert,
+    viewModel: PlanCalendarViewModel,
+    dialogStateChange: (PlanCalendarDialogMode) -> Unit,
+    calendarDialogState: PlanCalendarDialogDataHolder,
+    onDismiss: () -> Unit
+) {
+    when(calendarDialogAlert) {
+        is CalendarDialogEditAlert.DiscardChanges -> {
+            CalendarAlert(
+                title = "Отменить изменения?",
+                description = "Несохранённые изменения будут потеряны",
+                confirmText = "Отменить",
+                dismissText = "Вернуться",
+                onConfirm = {
+                    onDismiss()
+                    viewModel.discardEntityAndTasks()
+                    if(calendarDialogState.entity.title.isNullOrEmpty() && calendarDialogState.tasks.isEmpty())
+                        dialogStateChange(PlanCalendarDialogMode.IDLE)
+                    else
+                        dialogStateChange(PlanCalendarDialogMode.VIEW)
+                },
+                onDismiss = {
+                    onDismiss()
+                }
+            )
+        }
+        is CalendarDialogEditAlert.DeleteEntity -> {
+            CalendarAlert(
+                title = "Удалить запись?",
+                description = "Все данные будут удалены",
+                confirmText = "Удалить",
+                dismissText = "Отменить",
+                onConfirm = {
+                    onDismiss()
+                    viewModel.clearEntityAndTasks()
+                    dialogStateChange(PlanCalendarDialogMode.IDLE)
+                },
+                onDismiss = {
+                    onDismiss()
+                }
+            )
+        }
+        is CalendarDialogEditAlert.DeleteTask -> {
+            val task = calendarDialogAlert.task
+            CalendarAlert(
+                title = "Удалить задачу?",
+                description = "Эта задача будет удалена",
+                confirmText = "Удалить",
+                dismissText = "Отменить",
+                onConfirm = {
+                    onDismiss()
+                    viewModel.deleteTask(task)
+                },
+                onDismiss = {
+                    onDismiss()
+                }
+            )
+        }
+        is CalendarDialogEditAlert.None -> { }
+    }
+}
+
+@Composable
+fun CalendarDialogEditContent(
+    viewModel: PlanCalendarViewModel = hiltViewModel(),
+    dialogStateChange: (PlanCalendarDialogMode) -> Unit
+) {
     val calendarDialogState by viewModel.dialogState.collectAsStateWithLifecycle()
     val calendarDataState by viewModel.dataState.collectAsStateWithLifecycle()
-    CalendarDialogLoading(calendarDialogState.loading)
+    var calendarDialogAlert by remember { mutableStateOf<CalendarDialogEditAlert>(CalendarDialogEditAlert.None) }
+    CalendarLoading(calendarDialogState.loading)
     {
         Column(
             verticalArrangement = Arrangement.spacedBy(15.dp),
@@ -374,11 +482,7 @@ fun CalendarDialogEditContent(viewModel: PlanCalendarViewModel = hiltViewModel()
                 entity = calendarDialogState.entity,
                 type = calendarDataState.type,
                 onDismissClick = {
-                    viewModel.discardEntityAndTasks()
-                    if(calendarDialogState.entity.title.isNullOrEmpty() && calendarDialogState.tasks.isEmpty())
-                        dialogStateChange(PlanCalendarDialogMode.IDLE)
-                    else
-                        dialogStateChange(PlanCalendarDialogMode.VIEW)
+                    calendarDialogAlert = CalendarDialogEditAlert.DiscardChanges
                 }
             )
             Column(
@@ -399,7 +503,7 @@ fun CalendarDialogEditContent(viewModel: PlanCalendarViewModel = hiltViewModel()
                         dialogStateChange(PlanCalendarDialogMode.TASK)
                     },
                     onTaskDelete = { task ->
-                        viewModel.deleteTask(task)
+                        calendarDialogAlert = CalendarDialogEditAlert.DeleteTask(task = task)
                     },
                 )
             }
@@ -413,11 +517,18 @@ fun CalendarDialogEditContent(viewModel: PlanCalendarViewModel = hiltViewModel()
                         dialogStateChange(PlanCalendarDialogMode.VIEW)
                 },
                 onDelete = {
-                    viewModel.clearEntityAndTasks()
-                    dialogStateChange(PlanCalendarDialogMode.IDLE)
+                    calendarDialogAlert = CalendarDialogEditAlert.DeleteEntity
                 },
             )
         }
+
+        CalendarDialogEditAlertHandler(
+            calendarDialogAlert = calendarDialogAlert,
+            viewModel = viewModel,
+            dialogStateChange = dialogStateChange,
+            calendarDialogState = calendarDialogState,
+            onDismiss = { calendarDialogAlert = CalendarDialogEditAlert.None }
+        )
     }
 }
 
@@ -428,7 +539,8 @@ fun CalendarDialogEditContent(viewModel: PlanCalendarViewModel = hiltViewModel()
 @Composable
 fun CalendarDialogEditContentPreview() {
     MaterialTheme(
-        colorScheme = DarkColorScheme
+        colorScheme = DarkColorScheme,
+        typography = MyAppFont,
     ) {
         Box(modifier = Modifier.fillMaxSize().padding(35.dp)){
             Card(
@@ -444,7 +556,7 @@ fun CalendarDialogEditContentPreview() {
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.17f)
                     )
             ) {
-                CalendarDialogLoading(PlanCalendarLoading.Idle)
+                CalendarLoading(PlanCalendarLoading.Idle)
                 {
                     Column(
                         verticalArrangement = Arrangement.spacedBy(15.dp),

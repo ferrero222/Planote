@@ -66,6 +66,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.planote.DarkColorScheme
+import com.example.planote.MyAppFont
 import com.example.planote.viewModel.plan.PlanWeekDayDomain
 import com.example.planote.viewModel.plan.PlanWeekDayTaskDomain
 import com.example.planote.viewModel.plan.PlanWeekDialogMode
@@ -89,7 +90,10 @@ import java.util.Locale
  * Private functions
  ****************************************************************/
 @Composable
-private fun WeekDialogDayViewContentHeader(day: PlanWeekDayDomain, onDismissClick: () -> Unit) {
+private fun WeekDialogDayViewContentHeader(
+    day: PlanWeekDayDomain,
+    onDismissClick: () -> Unit
+) {
     Box(
         modifier = Modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center
@@ -136,7 +140,9 @@ private fun WeekDialogDayViewContentHeader(day: PlanWeekDayDomain, onDismissClic
 }
 
 @Composable
-private fun WeekDialogDayViewContentDescription(day: PlanWeekDayDomain){
+private fun WeekDialogDayViewContentDescription(
+    day: PlanWeekDayDomain
+){
     if(day.title.isNullOrEmpty()) return
     Column(
         modifier = Modifier.fillMaxWidth()
@@ -165,7 +171,92 @@ private fun WeekDialogDayViewContentDescription(day: PlanWeekDayDomain){
 }
 
 @Composable
-private fun WeekDialogDayViewContentTasks(tasks: List<PlanWeekDayTaskDomain>){
+private fun WeekDialogDayViewContentTasksItem(
+    task: PlanWeekDayTaskDomain
+){
+    val hasDescription = !task.description.isNullOrBlank()
+    var expandedTaskState by remember { mutableStateOf(false) }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f), shape = RoundedCornerShape(5.dp))
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = hasDescription) { expandedTaskState = !expandedTaskState }
+                .padding(10.dp)
+        ) {
+            Text(
+                text = task.title ?: "Нет описания",
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 15.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            if(task.time != LocalTime.MIDNIGHT) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                ){
+                    Icon(
+                        imageVector = Icons.Default.Schedule,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Text(
+                        text = task.time.format(DateTimeFormatter.ofPattern("HH:mm")),
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(start = 2.dp)
+                    )
+                }
+            }
+            if(hasDescription) {
+                Icon(
+                    imageVector = if (expandedTaskState) Icons.Default.KeyboardArrowUp
+                    else Icons.Default.KeyboardArrowDown,
+                    contentDescription = if (expandedTaskState) "Свернуть" else "Развернуть",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            else{
+                Spacer(modifier = Modifier.size(20.dp))
+            }
+        }
+        AnimatedVisibility(
+            visible = expandedTaskState && hasDescription,
+            enter = expandVertically(
+                expandFrom = Alignment.Top,
+                animationSpec = tween(durationMillis = 300)
+            ),
+            exit = shrinkVertically(
+                shrinkTowards = Alignment.Top,
+                animationSpec = tween(durationMillis = 300)
+            )
+        ) {
+            Text(
+                text = task.description ?: "Нет",
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                fontSize = 13.sp,
+                maxLines = 6,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 10.dp, end = 10.dp, bottom = 10.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun WeekDialogDayViewContentTasks(
+    tasks: List<PlanWeekDayTaskDomain>
+){
     if(tasks.isEmpty()) return
     val listState = rememberLazyListState()
     Column{
@@ -191,83 +282,7 @@ private fun WeekDialogDayViewContentTasks(tasks: List<PlanWeekDayTaskDomain>){
                 modifier = Modifier.fillMaxWidth()
             ) {
                 items(tasks, key = { it.id }) { task ->
-                    val hasDescription = !task.description.isNullOrBlank()
-                    var expandedTaskState by remember { mutableStateOf(false) }
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f), shape = RoundedCornerShape(5.dp))
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(5.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable(enabled = hasDescription) { expandedTaskState = !expandedTaskState }
-                                .padding(10.dp)
-                        ) {
-                            Text(
-                                text = task.title ?: "Нет описания",
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = 15.sp,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f)
-                            )
-                            if(task.time != LocalTime.MIDNIGHT) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ){
-                                    Icon(
-                                        imageVector = Icons.Default.Schedule,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Text(
-                                        text = task.time.format(DateTimeFormatter.ofPattern("HH:mm")),
-                                        fontSize = 13.sp,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontWeight = FontWeight.Medium,
-                                        modifier = Modifier.padding(start = 2.dp)
-                                    )
-                                }
-                            }
-                            if(hasDescription) {
-                                Icon(
-                                    imageVector = if (expandedTaskState) Icons.Default.KeyboardArrowUp
-                                    else Icons.Default.KeyboardArrowDown,
-                                    contentDescription = if (expandedTaskState) "Свернуть" else "Развернуть",
-                                    tint = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            else{
-                                Spacer(modifier = Modifier.size(20.dp))
-                            }
-                        }
-                        AnimatedVisibility(
-                            visible = expandedTaskState && hasDescription,
-                            enter = expandVertically(
-                                expandFrom = Alignment.Top,
-                                animationSpec = tween(durationMillis = 300)
-                            ),
-                            exit = shrinkVertically(
-                                shrinkTowards = Alignment.Top,
-                                animationSpec = tween(durationMillis = 300)
-                            )
-                        ) {
-                            Text(
-                                text = task.description ?: "Нет",
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                                fontSize = 13.sp,
-                                maxLines = 6,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(start = 10.dp, end = 10.dp, bottom = 10.dp)
-                            )
-                        }
-                    }
+                    WeekDialogDayViewContentTasksItem(task = task)
                 }
             }
             Column(
@@ -306,7 +321,9 @@ private fun WeekDialogDayViewContentTasks(tasks: List<PlanWeekDayTaskDomain>){
 }
 
 @Composable
-private fun WeekDialogDayViewContentFooter(onEdit: () -> Unit){
+private fun WeekDialogDayViewContentFooter(
+    onEdit: () -> Unit
+){
     Button(
         shape = RoundedCornerShape(10.dp),
         colors = ButtonDefaults.buttonColors(
@@ -332,9 +349,12 @@ private fun WeekDialogDayViewContentFooter(onEdit: () -> Unit){
  * Public functions
  ****************************************************************/
 @Composable
-fun WeekDialogDayViewContent(viewModel: PlanWeekViewModel = hiltViewModel(), dialogStateChange: (PlanWeekDialogMode) -> Unit) {
+fun WeekDialogDayViewContent(
+    viewModel: PlanWeekViewModel = hiltViewModel(),
+    dialogStateChange: (PlanWeekDialogMode) -> Unit
+) {
     val weekDialogState by viewModel.dialogDayState.collectAsStateWithLifecycle()
-    WeekDialogLoading(weekDialogState.loading) {
+    WeekLoading(weekDialogState.loading) {
         Column(
             verticalArrangement = Arrangement.spacedBy(15.dp),
             modifier = Modifier.fillMaxSize().padding(25.dp),
@@ -366,7 +386,8 @@ fun WeekDialogDayViewContent(viewModel: PlanWeekViewModel = hiltViewModel(), dia
 @Composable
 fun WeekDialogDayViewContentPreview() {
     MaterialTheme(
-        colorScheme = DarkColorScheme
+        colorScheme = DarkColorScheme,
+        typography = MyAppFont,
     ) {
         Box(modifier = Modifier.fillMaxSize().padding(35.dp)){
             Card(
@@ -382,7 +403,7 @@ fun WeekDialogDayViewContentPreview() {
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.17f)
                     )
             ) {
-                WeekDialogLoading(PlanWeekLoading.Idle) {
+                WeekLoading(PlanWeekLoading.Idle) {
                     Column(
                         verticalArrangement = Arrangement.spacedBy(15.dp),
                         modifier = Modifier.fillMaxSize().padding(25.dp),

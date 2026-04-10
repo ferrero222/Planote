@@ -16,24 +16,21 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.example.planote.viewModel.plan.PlanWeekDialogMode
-import com.example.planote.viewModel.plan.PlanWeekLoading
 
 /*****************************************************************
  * Variables, data, enum
@@ -41,17 +38,61 @@ import com.example.planote.viewModel.plan.PlanWeekLoading
 /*****************************************************************
  * Interfaces
  ****************************************************************/
+sealed class WeekDialogAlert {
+    object None : WeekDialogAlert()
+    object DismissChanges : WeekDialogAlert()
+}
+
 /*****************************************************************
  * Private functions
  ****************************************************************/
+@Composable
+private fun WeekDialogAlertHandler(
+    weekDialogAlert: WeekDialogAlert,
+    dialogStateChange: (PlanWeekDialogMode) -> Unit,
+    onDismiss: () -> Unit
+) {
+    when(weekDialogAlert) {
+        is WeekDialogAlert.DismissChanges -> {
+            WeekAlert(
+                title = "Закрыть окно?",
+                description = "Несохранённые изменения будут потеряны",
+                confirmText = "Закрыть",
+                dismissText = "Отмена",
+                onConfirm = {
+                    onDismiss()
+                    dialogStateChange(PlanWeekDialogMode.IDLE)
+                },
+                onDismiss = {
+                    onDismiss()
+                }
+            )
+        }
+        is WeekDialogAlert.None -> { }
+    }
+}
+
 /*****************************************************************
  * Public functions
  ****************************************************************/
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun WeekDialog(dialogState : PlanWeekDialogMode, dialogStateChange: (PlanWeekDialogMode) -> Unit) {
+fun WeekDialog(
+    dialogState : PlanWeekDialogMode,
+    dialogStateChange: (PlanWeekDialogMode) -> Unit
+) {
+    var weekDialogAlert by remember { mutableStateOf<WeekDialogAlert>(WeekDialogAlert.None) }
     if(dialogState != PlanWeekDialogMode.IDLE) {
-        Dialog(onDismissRequest = { dialogStateChange(PlanWeekDialogMode.IDLE) }) {
+        Dialog(onDismissRequest = {
+            when(dialogState){
+                PlanWeekDialogMode.DAYVIEW -> dialogStateChange(PlanWeekDialogMode.IDLE)
+                PlanWeekDialogMode.DAYEDIT -> weekDialogAlert = WeekDialogAlert.DismissChanges
+                PlanWeekDialogMode.DAYTASK -> weekDialogAlert = WeekDialogAlert.DismissChanges
+                PlanWeekDialogMode.PLANCHANGE -> dialogStateChange(PlanWeekDialogMode.IDLE)
+                PlanWeekDialogMode.PLANADD -> weekDialogAlert = WeekDialogAlert.DismissChanges
+                PlanWeekDialogMode.IDLE -> weekDialogAlert = WeekDialogAlert.None
+            }
+        }) {
             Card(
                 shape = RoundedCornerShape(20.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -81,39 +122,10 @@ fun WeekDialog(dialogState : PlanWeekDialogMode, dialogStateChange: (PlanWeekDia
             }
         }
     }
-}
 
-@Composable
-fun WeekDialogLoading(
-    status: PlanWeekLoading,
-    onContent: @Composable () -> Unit
-) {
-    val isLoading = when (status) {
-        is PlanWeekLoading.Loading,
-        is PlanWeekLoading.Saving,
-        is PlanWeekLoading.Deleting -> true
-        else -> false
-    }
-    AnimatedContent(
-        targetState = isLoading,
-        label = "Loading transition",
-        transitionSpec = {
-            fadeIn(animationSpec = tween(600)) togetherWith
-            fadeOut(animationSpec = tween(600))
-        }
-    ) { targetIsLoading ->
-        if (targetIsLoading) {
-            Box(
-                modifier = Modifier.fillMaxWidth().padding(top = 50.dp).height(100.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(35.dp)
-                )
-            }
-        } else {
-            onContent()
-        }
-    }
+    WeekDialogAlertHandler(
+        weekDialogAlert = weekDialogAlert,
+        dialogStateChange = dialogStateChange,
+        onDismiss = { weekDialogAlert = WeekDialogAlert.None }
+    )
 }

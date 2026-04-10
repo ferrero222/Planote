@@ -107,4 +107,7 @@ dependencies {
 
     //Glow
     implementation(libs.shadow.glow)
+
+    //NavigationBar
+    implementation(libs.navigation.bar)
 }

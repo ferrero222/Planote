@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.planote.DarkColorScheme
+import com.example.planote.MyAppFont
 import com.example.planote.viewModel.plan.PlanWeekDayDomain
 import com.example.planote.viewModel.plan.PlanWeekDayTaskDomain
 import com.example.planote.viewModel.plan.PlanWeekDialogMode
@@ -67,6 +68,12 @@ import java.util.Locale
 /*****************************************************************
  * Variables, data, enum
  ****************************************************************/
+sealed class WeekDialogDayTaskAlert {
+    object None : WeekDialogDayTaskAlert()
+    object DismissChanges : WeekDialogDayTaskAlert()
+    object DiscardChanges : WeekDialogDayTaskAlert()
+}
+
 /*****************************************************************
  * Interfaces
  ****************************************************************/
@@ -74,7 +81,9 @@ import java.util.Locale
  * Private functions
  ****************************************************************/
 @Composable
-private fun WeekDialogDayTaskContentHeader(day: PlanWeekDayDomain, onDismissClick: () -> Unit
+private fun WeekDialogDayTaskContentHeader(
+    day: PlanWeekDayDomain,
+    onDismissClick: () -> Unit
 ) {
     Box(
         modifier = Modifier.fillMaxWidth(),
@@ -121,7 +130,10 @@ private fun WeekDialogDayTaskContentHeader(day: PlanWeekDayDomain, onDismissClic
 }
 
 @Composable
-private fun WeekDialogDayTaskContentTime(task: PlanWeekDayTaskDomain, onTimeChange: (LocalTime) -> Unit) {
+private fun WeekDialogDayTaskContentTime(
+    task: PlanWeekDayTaskDomain,
+    onTimeChange: (LocalTime) -> Unit
+) {
     var hoursText by remember(task.id) { mutableStateOf(task.time.hour.toString().padStart(2, '0')) }
     var minutesText by remember(task.id) { mutableStateOf(task.time.minute.toString().padStart(2, '0')) }
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -208,7 +220,10 @@ private fun WeekDialogDayTaskContentTime(task: PlanWeekDayTaskDomain, onTimeChan
 }
 
 @Composable
-private fun WeekDialogDayTaskContentTitle(task: PlanWeekDayTaskDomain, onTitleChange: (String) -> Unit){
+private fun WeekDialogDayTaskContentTitle(
+    task: PlanWeekDayTaskDomain,
+    onTitleChange: (String) -> Unit
+){
     Column(modifier = Modifier.fillMaxWidth()) { //Description
         Text(
             text = "ЗАГОЛОВОК",
@@ -246,7 +261,10 @@ private fun WeekDialogDayTaskContentTitle(task: PlanWeekDayTaskDomain, onTitleCh
 }
 
 @Composable
-private fun WeekDialogDayTaskContentDescription(task: PlanWeekDayTaskDomain, onDescChange: (String) -> Unit){
+private fun WeekDialogDayTaskContentDescription(
+    task: PlanWeekDayTaskDomain,
+    onDescChange: (String) -> Unit
+){
     Column(modifier = Modifier.fillMaxWidth()) { //Description
         Text(
             text = "ОПИСАНИЕ",
@@ -284,7 +302,10 @@ private fun WeekDialogDayTaskContentDescription(task: PlanWeekDayTaskDomain, onD
 }
 
 @Composable
-private fun WeekDialogDayTaskContentFooter(onSave: () -> Unit, onCancel: () -> Unit){
+private fun WeekDialogDayTaskContentFooter(
+    onSave: () -> Unit,
+    onCancel: () -> Unit
+){
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -316,13 +337,61 @@ private fun WeekDialogDayTaskContentFooter(onSave: () -> Unit, onCancel: () -> U
     }
 }
 
+@Composable
+private fun WeekDialogDayTaskAlertHandler(
+    weekDialogAlert: WeekDialogDayTaskAlert,
+    viewModel: PlanWeekViewModel,
+    dialogStateChange: (PlanWeekDialogMode) -> Unit,
+    onDismiss: () -> Unit
+) {
+    when(weekDialogAlert) {
+        is WeekDialogDayTaskAlert.DismissChanges -> {
+            WeekAlert(
+                title = "Вернуться назад?",
+                description = "Несохранённые изменения будут потеряны",
+                confirmText = "Вернуться",
+                dismissText = "Отменить",
+                onConfirm = {
+                    onDismiss()
+                    viewModel.discardEditTask()
+                    dialogStateChange(PlanWeekDialogMode.DAYEDIT)
+                },
+                onDismiss = {
+                    onDismiss()
+                }
+            )
+        }
+        is WeekDialogDayTaskAlert.DiscardChanges -> {
+            WeekAlert(
+                title = "Отменить изменения?",
+                description = "Несохранённые изменения будут потеряны",
+                confirmText = "Отменить",
+                dismissText = "Вернуться",
+                onConfirm = {
+                    onDismiss()
+                    viewModel.discardEditTask()
+                    dialogStateChange(PlanWeekDialogMode.DAYEDIT)
+                },
+                onDismiss = {
+                    onDismiss()
+                }
+            )
+        }
+        is WeekDialogDayTaskAlert.None -> { }
+    }
+}
+
 /*****************************************************************
  * Public functions
  ****************************************************************/
 @Composable
-fun WeekDialogDayTaskContent(viewModel: PlanWeekViewModel = hiltViewModel(), dialogStateChange: (PlanWeekDialogMode) -> Unit) {
+fun WeekDialogDayTaskContent(
+    viewModel: PlanWeekViewModel = hiltViewModel(),
+    dialogStateChange: (PlanWeekDialogMode) -> Unit
+) {
     val weekDialogState by viewModel.dialogDayState.collectAsStateWithLifecycle()
-    WeekDialogLoading(weekDialogState.loading) {
+    var weekDialogAlert by remember { mutableStateOf<WeekDialogDayTaskAlert>(WeekDialogDayTaskAlert.None) }
+    WeekLoading(weekDialogState.loading) {
         Column(
             verticalArrangement = Arrangement.spacedBy(15.dp),
             modifier = Modifier.fillMaxSize().padding(25.dp),
@@ -330,8 +399,7 @@ fun WeekDialogDayTaskContent(viewModel: PlanWeekViewModel = hiltViewModel(), dia
             WeekDialogDayTaskContentHeader(
                 day = weekDialogState.day,
                 onDismissClick = {
-                    viewModel.discardEditTask()
-                    dialogStateChange(PlanWeekDialogMode.DAYEDIT)
+                    weekDialogAlert = WeekDialogDayTaskAlert.DismissChanges
                 }
             )
 
@@ -366,11 +434,17 @@ fun WeekDialogDayTaskContent(viewModel: PlanWeekViewModel = hiltViewModel(), dia
                     dialogStateChange(PlanWeekDialogMode.DAYEDIT)
                 },
                 onCancel = {
-                    viewModel.discardEditTask()
-                    dialogStateChange(PlanWeekDialogMode.DAYEDIT)
+                    weekDialogAlert = WeekDialogDayTaskAlert.DiscardChanges
                 },
             )
         }
+
+        WeekDialogDayTaskAlertHandler(
+            weekDialogAlert = weekDialogAlert,
+            viewModel = viewModel,
+            dialogStateChange = dialogStateChange,
+            onDismiss = { weekDialogAlert = WeekDialogDayTaskAlert.None }
+        )
     }
 }
 
@@ -381,7 +455,8 @@ fun WeekDialogDayTaskContent(viewModel: PlanWeekViewModel = hiltViewModel(), dia
 @Composable
 fun WeekDialogDayTaskContentPreview() {
     MaterialTheme(
-        colorScheme = DarkColorScheme
+        colorScheme = DarkColorScheme,
+        typography = MyAppFont,
     ) {
         Box(modifier = Modifier.fillMaxSize().padding(35.dp)){
             Card(
@@ -397,7 +472,7 @@ fun WeekDialogDayTaskContentPreview() {
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.17f)
                     )
             ) {
-                WeekDialogLoading(PlanWeekLoading.Idle) {
+                WeekLoading(PlanWeekLoading.Idle) {
                     Column(
                         verticalArrangement = Arrangement.spacedBy(15.dp),
                         modifier = Modifier.fillMaxSize().padding(25.dp),
@@ -415,7 +490,6 @@ fun WeekDialogDayTaskContentPreview() {
                                 task = PlanWeekDayTaskDomain(id = 1, title = "Задача 1", description = "Основной план", time = LocalTime.NOON),
                                 onTimeChange = {}
                             )
-
                             WeekDialogDayTaskContentTitle(
                                 task = PlanWeekDayTaskDomain(id = 1, title = "Задача 1", description = "Основной план", time = LocalTime.NOON),
                                 onTitleChange = {}

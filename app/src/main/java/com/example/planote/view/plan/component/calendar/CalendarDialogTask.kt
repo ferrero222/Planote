@@ -37,6 +37,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -47,6 +50,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.planote.DarkColorScheme
+import com.example.planote.MyAppFont
 import com.example.planote.viewModel.plan.PlanCalendarDialogMode
 import com.example.planote.viewModel.plan.PlanCalendarEntityDomain
 import com.example.planote.viewModel.plan.PlanCalendarLoading
@@ -60,6 +64,12 @@ import java.util.Locale
 /*****************************************************************
  * Variables, data, enum
  ****************************************************************/
+sealed class CalendarDialogTaskAlert {
+    object None : CalendarDialogTaskAlert()
+    object DismissChanges : CalendarDialogTaskAlert()
+    object DiscardChanges : CalendarDialogTaskAlert()
+}
+
 /*****************************************************************
  * Interfaces
  ****************************************************************/
@@ -67,7 +77,9 @@ import java.util.Locale
  * Private functions
  ****************************************************************/
 @Composable
-private fun CalendarDialogTaskContentHeader(entity: PlanCalendarEntityDomain, type: PlanCalendarType, onDismissClick: () -> Unit
+private fun CalendarDialogTaskContentHeader(
+    entity: PlanCalendarEntityDomain,
+    type: PlanCalendarType, onDismissClick: () -> Unit
 ) {
     Box(
         modifier = Modifier.fillMaxWidth(),
@@ -117,7 +129,10 @@ private fun CalendarDialogTaskContentHeader(entity: PlanCalendarEntityDomain, ty
 }
 
 @Composable
-private fun CalendarDialogTaskContentTitle(task: PlanCalendarTaskDomain, onTitleChange: (String) -> Unit){
+private fun CalendarDialogTaskContentTitle(
+    task: PlanCalendarTaskDomain,
+    onTitleChange: (String) -> Unit
+){
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = "ЗАГОЛОВОК",
@@ -155,7 +170,10 @@ private fun CalendarDialogTaskContentTitle(task: PlanCalendarTaskDomain, onTitle
 }
 
 @Composable
-private fun CalendarDialogTaskContentDescription(task: PlanCalendarTaskDomain, onDescChange: (String) -> Unit){
+private fun CalendarDialogTaskContentDescription(
+    task: PlanCalendarTaskDomain,
+    onDescChange: (String) -> Unit
+){
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = "ОПИСАНИЕ",
@@ -193,7 +211,10 @@ private fun CalendarDialogTaskContentDescription(task: PlanCalendarTaskDomain, o
 }
 
 @Composable
-private fun CalendarDialogTaskContentFooter(onSave: () -> Unit, onCancel: () -> Unit){
+private fun CalendarDialogTaskContentFooter(
+    onSave: () -> Unit,
+    onCancel: () -> Unit
+){
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -229,10 +250,58 @@ private fun CalendarDialogTaskContentFooter(onSave: () -> Unit, onCancel: () -> 
  * Public functions
  ****************************************************************/
 @Composable
-fun CalendarDialogTaskContent(viewModel: PlanCalendarViewModel = hiltViewModel(), dialogStateChange: (PlanCalendarDialogMode) -> Unit) {
+private fun CalendarDialogTaskAlertHandler(
+    calendarDialogAlert: CalendarDialogTaskAlert,
+    viewModel: PlanCalendarViewModel,
+    dialogStateChange: (PlanCalendarDialogMode) -> Unit,
+    onDismiss: () -> Unit
+) {
+    when(calendarDialogAlert) {
+        is CalendarDialogTaskAlert.DismissChanges -> {
+            CalendarAlert(
+                title = "Вернуться назад?",
+                description = "Несохранённые изменения будут потеряны",
+                confirmText = "Вернуться",
+                dismissText = "Отменить",
+                onConfirm = {
+                    onDismiss()
+                    viewModel.discardEditTask()
+                    dialogStateChange(PlanCalendarDialogMode.EDIT)
+                },
+                onDismiss = {
+                    onDismiss()
+                }
+            )
+        }
+        is CalendarDialogTaskAlert.DiscardChanges -> {
+            CalendarAlert(
+                title = "Отменить изменения?",
+                description = "Несохранённые изменения будут потеряны",
+                confirmText = "Отменить",
+                dismissText = "Вернуться",
+                onConfirm = {
+                    onDismiss()
+                    viewModel.discardEditTask()
+                    dialogStateChange(PlanCalendarDialogMode.EDIT)
+                },
+                onDismiss = {
+                    onDismiss()
+                }
+            )
+        }
+        is CalendarDialogTaskAlert.None -> { }
+    }
+}
+
+@Composable
+fun CalendarDialogTaskContent(
+    viewModel: PlanCalendarViewModel = hiltViewModel(),
+    dialogStateChange: (PlanCalendarDialogMode) -> Unit
+) {
     val calendarDialogState by viewModel.dialogState.collectAsStateWithLifecycle()
     val calendarDataState by viewModel.dataState.collectAsStateWithLifecycle()
-    CalendarDialogLoading(calendarDialogState.loading) {
+    var calendarDialogAlert by remember { mutableStateOf<CalendarDialogTaskAlert>(CalendarDialogTaskAlert.None) }
+    CalendarLoading(calendarDialogState.loading) {
         Column(
             verticalArrangement = Arrangement.spacedBy(15.dp),
             modifier = Modifier.fillMaxSize().padding(25.dp),
@@ -241,8 +310,7 @@ fun CalendarDialogTaskContent(viewModel: PlanCalendarViewModel = hiltViewModel()
                 entity = calendarDialogState.entity,
                 type = calendarDataState.type,
                 onDismissClick = {
-                    viewModel.discardEditTask()
-                    dialogStateChange(PlanCalendarDialogMode.EDIT)
+                    calendarDialogAlert = CalendarDialogTaskAlert.DismissChanges
                 }
             )
 
@@ -270,11 +338,17 @@ fun CalendarDialogTaskContent(viewModel: PlanCalendarViewModel = hiltViewModel()
                     dialogStateChange(PlanCalendarDialogMode.EDIT)
                 },
                 onCancel = {
-                    viewModel.discardEditTask()
-                    dialogStateChange(PlanCalendarDialogMode.EDIT)
+                    calendarDialogAlert = CalendarDialogTaskAlert.DiscardChanges
                 },
             )
         }
+
+        CalendarDialogTaskAlertHandler(
+            calendarDialogAlert = calendarDialogAlert,
+            viewModel = viewModel,
+            dialogStateChange = dialogStateChange,
+            onDismiss = { calendarDialogAlert = CalendarDialogTaskAlert.None }
+        )
     }
 }
 
@@ -285,7 +359,8 @@ fun CalendarDialogTaskContent(viewModel: PlanCalendarViewModel = hiltViewModel()
 @Composable
 fun CalendarDialogTaskContentPreview() {
     MaterialTheme(
-        colorScheme = DarkColorScheme
+        colorScheme = DarkColorScheme,
+        typography = MyAppFont,
     ) {
         Box(modifier = Modifier.fillMaxSize().padding(35.dp)){
             Card(
@@ -301,7 +376,7 @@ fun CalendarDialogTaskContentPreview() {
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.17f)
                     )
             ) {
-                CalendarDialogLoading(PlanCalendarLoading.Idle) {
+                CalendarLoading(PlanCalendarLoading.Idle) {
                     Column(
                         verticalArrangement = Arrangement.spacedBy(15.dp),
                         modifier = Modifier.fillMaxSize().padding(25.dp),

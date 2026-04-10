@@ -16,24 +16,21 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.example.planote.viewModel.plan.PlanCalendarDialogMode
-import com.example.planote.viewModel.plan.PlanCalendarLoading
 
 /*****************************************************************
  * Variables, data, enum
@@ -41,17 +38,59 @@ import com.example.planote.viewModel.plan.PlanCalendarLoading
 /*****************************************************************
  * Interfaces
  ****************************************************************/
+sealed class CalendarDialogAlert {
+    object None : CalendarDialogAlert()
+    object DismissChanges : CalendarDialogAlert()
+}
+
 /*****************************************************************
  * Private functions
  ****************************************************************/
+@Composable
+private fun CalendarDialogAlertHandler(
+    calendarDialogAlert: CalendarDialogAlert,
+    dialogStateChange: (PlanCalendarDialogMode) -> Unit,
+    onDismiss: () -> Unit
+) {
+    when(calendarDialogAlert) {
+        is CalendarDialogAlert.DismissChanges -> {
+            CalendarAlert(
+                title = "Закрыть окно?",
+                description = "Несохранённые изменения будут потеряны",
+                confirmText = "Закрыть",
+                dismissText = "Отмена",
+                onConfirm = {
+                    onDismiss()
+                    dialogStateChange(PlanCalendarDialogMode.IDLE)
+                },
+                onDismiss = {
+                    onDismiss()
+                }
+            )
+        }
+        is CalendarDialogAlert.None -> { }
+    }
+}
+
 /*****************************************************************
  * Public functions
  ****************************************************************/
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun CalendarDialog(dialogState : PlanCalendarDialogMode, dialogStateChange: (PlanCalendarDialogMode) -> Unit) {
+fun CalendarDialog(
+    dialogState : PlanCalendarDialogMode,
+    dialogStateChange: (PlanCalendarDialogMode) -> Unit
+) {
+    var calendarDialogAlert by remember { mutableStateOf<CalendarDialogAlert>(CalendarDialogAlert.None) }
     if(dialogState != PlanCalendarDialogMode.IDLE) {
-        Dialog(onDismissRequest = { dialogStateChange(PlanCalendarDialogMode.IDLE) }) {
+        Dialog(onDismissRequest = {
+            when(dialogState){
+                PlanCalendarDialogMode.VIEW -> dialogStateChange(PlanCalendarDialogMode.IDLE)
+                PlanCalendarDialogMode.EDIT -> calendarDialogAlert = CalendarDialogAlert.DismissChanges
+                PlanCalendarDialogMode.TASK -> calendarDialogAlert = CalendarDialogAlert.DismissChanges
+                PlanCalendarDialogMode.IDLE -> calendarDialogAlert = CalendarDialogAlert.None
+            }
+        }) {
             Card(
                 shape = RoundedCornerShape(20.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -79,39 +118,10 @@ fun CalendarDialog(dialogState : PlanCalendarDialogMode, dialogStateChange: (Pla
             }
         }
     }
-}
 
-@Composable
-fun CalendarDialogLoading(
-    status: PlanCalendarLoading,
-    onContent: @Composable () -> Unit
-) {
-    val isLoading = when (status) {
-        is PlanCalendarLoading.Loading,
-        is PlanCalendarLoading.Saving,
-        is PlanCalendarLoading.Deleting -> true
-        else -> false
-    }
-    AnimatedContent(
-        targetState = isLoading,
-        label = "Loading transition",
-        transitionSpec = {
-            fadeIn(animationSpec = tween(600)) togetherWith
-            fadeOut(animationSpec = tween(600))
-        }
-    ) { targetIsLoading ->
-        if (targetIsLoading) {
-            Box(
-                modifier = Modifier.fillMaxWidth().padding(top = 50.dp).height(100.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(35.dp)
-                )
-            }
-        } else {
-            onContent()
-        }
-    }
+    CalendarDialogAlertHandler(
+        calendarDialogAlert = calendarDialogAlert,
+        dialogStateChange = dialogStateChange,
+        onDismiss = { calendarDialogAlert = CalendarDialogAlert.None }
+    )
 }

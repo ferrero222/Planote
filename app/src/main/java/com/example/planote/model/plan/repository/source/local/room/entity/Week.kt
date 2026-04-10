@@ -68,4 +68,5 @@ data class PlanWeekDayTaskEntity(
     val title: String? = null,
     val time: LocalTime,
     val description: String? = null,
+    val isDone : Boolean = false
 )

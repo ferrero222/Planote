@@ -37,6 +37,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -48,6 +51,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.planote.DarkColorScheme
+import com.example.planote.MyAppFont
 import com.example.planote.viewModel.plan.PlanWeekDialogMode
 import com.example.planote.viewModel.plan.PlanWeekDomain
 import com.example.planote.viewModel.plan.PlanWeekLoading
@@ -57,6 +61,12 @@ import me.trishiraj.shadowglow.shadowGlow
 /*****************************************************************
  * Variables, data, enum
  ****************************************************************/
+sealed class WeekDialogPlanAddAlert {
+    object None : WeekDialogPlanAddAlert()
+    object DismissChanges : WeekDialogPlanAddAlert()
+    object DiscardChanges : WeekDialogPlanAddAlert()
+}
+
 /*****************************************************************
  * Interfaces
  ****************************************************************/
@@ -64,7 +74,8 @@ import me.trishiraj.shadowglow.shadowGlow
  * Private functions
  ****************************************************************/
 @Composable
-private fun WeekDialogPlanAddContentHeader(onDismissClick: () -> Unit
+private fun WeekDialogPlanAddContentHeader(
+    onDismissClick: () -> Unit
 ) {
     Box(
         modifier = Modifier.fillMaxWidth(),
@@ -81,7 +92,7 @@ private fun WeekDialogPlanAddContentHeader(onDismissClick: () -> Unit
             )
         }
         Text(
-            text = "НОВЫЙ ПЛАН",
+            text = "РЕДАКТИРОВАНИЕ",
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -98,7 +109,7 @@ private fun WeekDialogPlanAddContentHeader(onDismissClick: () -> Unit
 
         ) {
             Text(
-                text = "PLAN",
+                text = "EDIT",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
@@ -109,7 +120,10 @@ private fun WeekDialogPlanAddContentHeader(onDismissClick: () -> Unit
 }
 
 @Composable
-private fun WeekDialogPlanAddContentTitle(week: PlanWeekDomain, onTitleChange: (String) -> Unit){
+private fun WeekDialogPlanAddContentTitle(
+    week: PlanWeekDomain,
+    onTitleChange: (String) -> Unit
+){
     Column(modifier = Modifier.fillMaxWidth()) { //Description
         Text(
             text = "ЗАГОЛОВОК",
@@ -147,7 +161,10 @@ private fun WeekDialogPlanAddContentTitle(week: PlanWeekDomain, onTitleChange: (
 }
 
 @Composable
-private fun WeekDialogPlanAddContentDescription(week: PlanWeekDomain, onDescChange: (String) -> Unit){
+private fun WeekDialogPlanAddContentDescription(
+    week: PlanWeekDomain,
+    onDescChange: (String) -> Unit
+){
     Column(modifier = Modifier.fillMaxWidth()) { //Description
         Text(
             text = "ОПИСАНИЕ",
@@ -185,7 +202,10 @@ private fun WeekDialogPlanAddContentDescription(week: PlanWeekDomain, onDescChan
 }
 
 @Composable
-private fun WeekDialogPlanAddContentFooter(onSave: () -> Unit, onCancel: () -> Unit){
+private fun WeekDialogPlanAddContentFooter(
+    onSave: () -> Unit,
+    onCancel: () -> Unit
+){
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -217,21 +237,69 @@ private fun WeekDialogPlanAddContentFooter(onSave: () -> Unit, onCancel: () -> U
     }
 }
 
+@Composable
+private fun WeekDialogPlanAddAlertHandler(
+    planDialogAlert: WeekDialogPlanAddAlert,
+    viewModel: PlanWeekViewModel,
+    dialogStateChange: (PlanWeekDialogMode) -> Unit,
+    planDialogState: com.example.planote.viewModel.plan.PlanWeekDialogPlanDataHolder,
+    onDismiss: () -> Unit
+) {
+    when(planDialogAlert) {
+        is WeekDialogPlanAddAlert.DismissChanges -> {
+            WeekAlert(
+                title = "Вернуться назад?",
+                description = "Несохранённые изменения будут потеряны",
+                confirmText = "Вернуться",
+                dismissText = "Отменить",
+                onConfirm = {
+                    onDismiss()
+                    viewModel.discardEditWeek()
+                    if(planDialogState.weeks.isEmpty()) dialogStateChange(PlanWeekDialogMode.IDLE) else dialogStateChange(PlanWeekDialogMode.PLANCHANGE)
+                },
+                onDismiss = {
+                    onDismiss()
+                }
+            )
+        }
+        is WeekDialogPlanAddAlert.DiscardChanges -> {
+            WeekAlert(
+                title = "Отменить изменения?",
+                description = "Несохранённые изменения будут потеряны",
+                confirmText = "Отменить",
+                dismissText = "Вернуться",
+                onConfirm = {
+                    onDismiss()
+                    viewModel.discardEditWeek()
+                    if(planDialogState.weeks.isEmpty()) dialogStateChange(PlanWeekDialogMode.IDLE) else dialogStateChange(PlanWeekDialogMode.PLANCHANGE)
+                },
+                onDismiss = {
+                    onDismiss()
+                }
+            )
+        }
+        is WeekDialogPlanAddAlert.None -> { }
+    }
+}
+
 /*****************************************************************
  * Public functions
  ****************************************************************/
 @Composable
-fun WeekDialogPlanAddContent(viewModel: PlanWeekViewModel = hiltViewModel(), dialogStateChange: (PlanWeekDialogMode) -> Unit) {
+fun WeekDialogPlanAddContent(
+    viewModel: PlanWeekViewModel = hiltViewModel(),
+    dialogStateChange: (PlanWeekDialogMode) -> Unit
+) {
     val planDialogState by viewModel.dialogPlanState.collectAsStateWithLifecycle()
-    WeekDialogLoading(planDialogState.loading) {
+    var planDialogAlert by remember { mutableStateOf<WeekDialogPlanAddAlert>(WeekDialogPlanAddAlert.None) }
+    WeekLoading(planDialogState.loading) {
         Column(
             verticalArrangement = Arrangement.spacedBy(15.dp),
             modifier = Modifier.fillMaxSize().padding(25.dp),
         ) {
             WeekDialogPlanAddContentHeader(
                 onDismissClick = {
-                    viewModel.discardEditWeek()
-                    dialogStateChange(PlanWeekDialogMode.PLANCHANGE)
+                    planDialogAlert = WeekDialogPlanAddAlert.DismissChanges
                 }
             )
 
@@ -259,11 +327,18 @@ fun WeekDialogPlanAddContent(viewModel: PlanWeekViewModel = hiltViewModel(), dia
                     dialogStateChange(PlanWeekDialogMode.PLANCHANGE)
                 },
                 onCancel = {
-                    viewModel.discardEditWeek()
-                    dialogStateChange(PlanWeekDialogMode.PLANCHANGE)
+                    planDialogAlert = WeekDialogPlanAddAlert.DiscardChanges
                 },
             )
         }
+
+        WeekDialogPlanAddAlertHandler(
+            planDialogAlert = planDialogAlert,
+            viewModel = viewModel,
+            dialogStateChange = dialogStateChange,
+            planDialogState = planDialogState,
+            onDismiss = { planDialogAlert = WeekDialogPlanAddAlert.None }
+        )
     }
 }
 
@@ -274,7 +349,8 @@ fun WeekDialogPlanAddContent(viewModel: PlanWeekViewModel = hiltViewModel(), dia
 @Composable
 fun WeekDialogPlanAddContentPreview() {
     MaterialTheme(
-        colorScheme = DarkColorScheme
+        colorScheme = DarkColorScheme,
+        typography = MyAppFont,
     ) {
         Box(modifier = Modifier.fillMaxSize().padding(35.dp)){
             Card(
@@ -290,7 +366,7 @@ fun WeekDialogPlanAddContentPreview() {
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.17f)
                     )
             ) {
-                WeekDialogLoading(PlanWeekLoading.Idle) {
+                WeekLoading(PlanWeekLoading.Idle) {
                     Column(
                         verticalArrangement = Arrangement.spacedBy(15.dp),
                         modifier = Modifier.fillMaxSize().padding(25.dp),

@@ -1,5 +1,5 @@
 /*****************************************************************
- *  Package for main screen with circular pager
+ *  Package for main screen with bottom navigation
  *  @author Ferrero
  *  @date 21.08.2025
  ****************************************************************/
@@ -8,162 +8,148 @@ package com.example.planote.view
 /*****************************************************************
  * Imported packages
  ****************************************************************/
-import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PagerState
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Note
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.lerp
+import com.example.bottombar.AnimatedBottomBar
+import com.example.bottombar.components.BottomBarItem
+import com.example.bottombar.model.IndicatorStyle
+import com.example.bottombar.model.ItemStyle
+import com.example.planote.DarkColorScheme
 import com.example.planote.view.note.NotesPage
 import com.example.planote.view.plan.PlannerPage
 import com.example.planote.view.server.ServerPage
 import com.example.planote.view.settings.SettingsPage
-import kotlin.math.abs
 
 /*****************************************************************
  * Variables, data, enum
  ****************************************************************/
-private const val MULTIPLIER = 100
-private const val BUFFER_ZONE = 5
+sealed class Screen(
+    val title: String,
+    val icon: ImageVector
+) {
+    object Planner : Screen("Планирование", Icons.Default.DateRange)
+    object Notes : Screen("Заметки", Icons.AutoMirrored.Filled.Note)
+    object Server : Screen("Сервер", Icons.Default.Cloud)
+    object Settings : Screen("Настройки", Icons.Default.Settings)
 
-enum class Page { Planner, Notes, Settings, Server }
+    companion object {
+        val items = listOf(Planner, Notes, Server, Settings)
+    }
+}
 
 /*****************************************************************
- * Interfaces
+ * Public functions
  ****************************************************************/
-/*****************************************************************
- * Top level functions
- ****************************************************************/
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MainScreen() {
-    val pages = remember { Page.entries }
-    val pagesAmount = pages.size * MULTIPLIER //5*100 = 500
-    val initialPage = (pagesAmount / 2) // 500 /2 = 250 (in the middle)
-    val pagerState = rememberPagerState(pageCount = { pagesAmount }, initialPage = initialPage)
-
-    LaunchedEffect(pagerState.currentPage) {
-        val currentPage = pagerState.currentPage //current from 0 to 500
-        val pagesSizeof = pages.size  //size of enum
-
-        when {
-            currentPage < pagesSizeof * BUFFER_ZONE -> { // if X belows 25, we so close to low border
-                val targetPage = currentPage + pagesSizeof * (MULTIPLIER / 2) //get back to middle with offset
-                pagerState.scrollToPage(targetPage) //move to page
-            }
-            currentPage > pagesAmount - pagesSizeof * BUFFER_ZONE -> { //if X upper 475, we so close to high border
-                val targetPage = currentPage - pagesSizeof * (MULTIPLIER / 2) //get back to middle with offset
-                pagerState.scrollToPage(targetPage) //move to page
-            }
-        }
-    }
-
-    Box(
-        modifier = Modifier.fillMaxSize()
-                           .background(MaterialTheme.colorScheme.background)
-                           .statusBarsPadding()
-    ) {
-        HorizontalPager(
-            state = pagerState, modifier = Modifier.fillMaxSize()
-        ) { page ->
-            val actualScreen = pages[page % pages.size] //num of ENUM
-            PageContent(
-                screen = actualScreen, modifier = Modifier.fillMaxSize()
+    var selectedScreenIndex by remember { mutableIntStateOf(0) }
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background,
+        bottomBar = {
+            BottomNavigationBar(
+                selectedIndex = selectedScreenIndex,
+                onScreenSelected = { index -> selectedScreenIndex = index }
             )
-        }
-        CenteredPageIndicator(
-            pageSizeof = pages.size,
-            currentPage = pagerState.currentPage % pages.size,
-            pagerState = pagerState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter).padding(bottom = 32.dp)
-                .background(color = MaterialTheme.colorScheme.background, shape = RoundedCornerShape(16.dp))
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-        )
-    }
-}
-
-@Composable
-private fun PageContent(screen: Page, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-    ) {
-        when (screen) {
-            Page.Planner  -> PlannerPage()
-            Page.Notes    -> NotesPage()
-            Page.Settings -> SettingsPage()
-            Page.Server   -> ServerPage()
-        }
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun CenteredPageIndicator(pagerState: PagerState, pageSizeof: Int, currentPage: Int, modifier: Modifier = Modifier) {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically
+        },
+    ) { padding ->
+        Box(
+            modifier = Modifier.fillMaxSize().padding(padding)
         ) {
-            repeat(pageSizeof) { index ->
-                val curPageOffset = pagerState.currentPageOffsetFraction
-                val targetPage = currentPage + curPageOffset
-                val distance = calculateCyclicDistance(currentIndex = index.toFloat(), targetIndex = targetPage, totalPages = pageSizeof)
-                val dotSize = when {
-                    distance < 0.1f -> 12.dp
-                    distance <= 1.0f -> lerp(6.dp, 12.dp, 1f - distance)
-                    else -> 6.dp
-                }
-                val dotColor = when {
-                    distance < 0.1f -> MaterialTheme.colorScheme.primary
-                    distance <= 1.0f -> {
-                        val progress = 1f - distance
-                        val primaryColor = MaterialTheme.colorScheme.primary
-                        val inactiveColor = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f)
-                        lerp(inactiveColor, primaryColor, progress)
-                    }
-                    else -> MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.7f)
-                }
+            val plannerAlpha  by animateFloatAsState(targetValue = if (selectedScreenIndex == 0) 1f else 0f, animationSpec = tween(durationMillis = 300), label = "PlannerAlpha")
+            val notesAlpha    by animateFloatAsState(targetValue = if (selectedScreenIndex == 1) 1f else 0f, animationSpec = tween(durationMillis = 300), label = "NotesAlpha")
+            val serverAlpha   by animateFloatAsState(targetValue = if (selectedScreenIndex == 2) 1f else 0f, animationSpec = tween(durationMillis = 300), label = "ServerAlpha")
+            val settingsAlpha by animateFloatAsState(targetValue = if (selectedScreenIndex == 3) 1f else 0f, animationSpec = tween(durationMillis = 300), label = "SettingsAlpha")
+            Box(modifier = Modifier.fillMaxSize().graphicsLayer { alpha = plannerAlpha })  { PlannerPage()  }
+            Box(modifier = Modifier.fillMaxSize().graphicsLayer { alpha = notesAlpha })    { NotesPage()    }
+            Box(modifier = Modifier.fillMaxSize().graphicsLayer { alpha = serverAlpha })   { ServerPage()   }
+            Box(modifier = Modifier.fillMaxSize().graphicsLayer { alpha = settingsAlpha }) { SettingsPage() }
+        }
+    }
+}
 
-                Box(
-                    modifier = Modifier.padding(horizontal = 4.dp)
-                                       .size(dotSize)
-                                       .clip(CircleShape)
-                                       .background(dotColor)
+/*****************************************************************
+ * Private functions
+ ****************************************************************/
+@Composable
+private fun BottomNavigationBar(
+    selectedIndex: Int,
+    onScreenSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier.background(MaterialTheme.colorScheme.surface)
+    ) {
+        AnimatedBottomBar(
+            bottomBarHeight = 60.dp,
+            selectedItem = selectedIndex,
+            itemSize = Screen.items.size,
+            containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.6f),
+            indicatorStyle = IndicatorStyle.LINE,
+            indicatorColor = MaterialTheme.colorScheme.primary,
+        ) {
+            Screen.items.forEachIndexed { index, screen ->
+                BottomBarItem(
+                    selected = index == selectedIndex,
+                    onClick = { onScreenSelected(index) },
+                    imageVector = screen.icon,
+                    label = screen.title,
+                    containerColor = Color.Transparent,
+                    contentColor = if(index == selectedIndex) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    iconColor = if(index == selectedIndex) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    textColor = if(index == selectedIndex) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    itemStyle = ItemStyle.STYLE4
                 )
             }
         }
     }
 }
 
-private fun calculateCyclicDistance(currentIndex: Float, targetIndex: Float, totalPages: Int): Float {
-    val directDistance = abs(currentIndex - targetIndex)
-    val cyclicDistance = totalPages - directDistance
-    return minOf(directDistance, cyclicDistance)
-}
-
-/*****************************************************************
- * Classes
- ****************************************************************/
 /*****************************************************************
  * Preview
  ****************************************************************/
+@Preview(showBackground = true, backgroundColor = 0xFF121212)
+@Composable
+fun MainScreenPreview() {
+    MaterialTheme(
+        colorScheme = DarkColorScheme
+    ) {
+        var selectedScreenIndex by remember { mutableIntStateOf(0) }
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = MaterialTheme.colorScheme.background,
+            bottomBar = {
+                BottomNavigationBar(
+                    selectedIndex = selectedScreenIndex,
+                    onScreenSelected = { index -> selectedScreenIndex = index }
+                )
+            }
+        ) { padding ->
+            Box(
+                modifier = Modifier.fillMaxSize().padding(padding)
+            )
+        }
+    }
+}

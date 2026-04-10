@@ -17,12 +17,16 @@ import com.example.planote.model.plan.repository.source.local.room.entity.PlanWe
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -52,6 +56,7 @@ data class PlanWeekDayTaskDomain(
     val title: String? = null,
     val time: LocalTime = LocalTime.MIDNIGHT,
     val description: String? = null,
+    val isDone : Boolean = false
 )
 
 data class PlanWeekDataHolder(
@@ -96,6 +101,10 @@ interface PlanWeekDataImplements {
 
 /* Dialog methods */
 interface PlanWeekDialogImplements {
+
+    /* DAYBLOCK */
+    suspend fun observeDayTasks(day: PlanWeekDayDomain): Flow<List<PlanWeekDayTaskDomain>> //Observe tasks for a day reactively
+
     /* DAYVIEW */
     fun loadDayAndTasks(day: PlanWeekDayDomain)     //Get cur day and tasks from DB to local memory
 
@@ -169,11 +178,11 @@ class PlanWeekViewModel @Inject constructor(
 
     private fun PlanWeekEntity.toDomain() = PlanWeekDomain(this.bdId, this.title, this.description, this.isToggle)
     private fun PlanWeekDayEntity.toDomain() = PlanWeekDayDomain(this.bdId, this.ownerId, this.title, this.num)
-    private fun PlanWeekDayTaskEntity.toDomain() = PlanWeekDayTaskDomain(this.bdId, this.ownerId, this.title, this.time, this.description)
+    private fun PlanWeekDayTaskEntity.toDomain() = PlanWeekDayTaskDomain(this.bdId, this.ownerId, this.title, this.time, this.description, this.isDone)
 
     private fun PlanWeekDomain.toEntity() = PlanWeekEntity(this.id, this.title, this.description, this.isToggle)
     private fun PlanWeekDayDomain.toEntity() = PlanWeekDayEntity(this.id, this.ownerId, this.title, this.num)
-    private fun PlanWeekDayTaskDomain.toEntity() = PlanWeekDayTaskEntity(this.id, this.ownerId, this.title, this.time, this.description)
+    private fun PlanWeekDayTaskDomain.toEntity() = PlanWeekDayTaskEntity(this.id, this.ownerId, this.title, this.time, this.description, this.isDone)
 
     private fun PlanWeekDomain.isNew(): Boolean = this.id <= 0L
     private fun PlanWeekDayDomain.isNew(): Boolean = this.id <= 0L
@@ -245,6 +254,28 @@ class PlanWeekViewModel @Inject constructor(
     /*************************************************************
      * Public functions @PlanWeekDialogImplements
      *************************************************************/
+    /* DAYBLOCK */
+    fun observeDayTasksForDayIndex(dayIndex: Int): Flow<List<PlanWeekDayTaskDomain>> {
+        return _dataState
+            .map { state -> state.weeks.find { it.isToggle }?.id ?: 0L }
+            .distinctUntilChanged()
+            .flatMapLatest { weekId ->
+                if (weekId == 0L) return@flatMapLatest flowOf(emptyList())
+                weekRepository.getWeekDays(weekId).flatMapLatest { days ->
+                    val day = days.find { it.num == dayIndex }
+                    if (day == null || day.bdId <= 0L) flowOf(emptyList())
+                    else weekRepository.getWeekDayTasks(day.bdId).map { tasks -> tasks.map { it.toDomain() } }
+                }
+            }
+            .map { tasks -> sortTimeTasks(tasks) }
+    }
+
+    /* DAYBLOCK */
+    override suspend fun observeDayTasks(day: PlanWeekDayDomain): Flow<List<PlanWeekDayTaskDomain>> {
+        return if (day.id <= 0L) emptyFlow()
+        else weekRepository.getWeekDayTasks(day.id).map { tasks -> sortTimeTasks(tasks.map { it.toDomain() }) }
+    }
+
     /* DAYVIEW */
     override fun loadDayAndTasks(day: PlanWeekDayDomain) {
         newId = 0

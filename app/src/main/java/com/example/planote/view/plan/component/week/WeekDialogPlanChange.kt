@@ -34,7 +34,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -50,7 +49,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -69,6 +67,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.planote.DarkColorScheme
+import com.example.planote.MyAppFont
 import com.example.planote.viewModel.plan.PlanWeekDialogMode
 import com.example.planote.viewModel.plan.PlanWeekDomain
 import com.example.planote.viewModel.plan.PlanWeekLoading
@@ -80,6 +79,11 @@ import me.trishiraj.shadowglow.shadowGlow
 /*****************************************************************
  * Variables, data, enum
  ****************************************************************/
+sealed class WeekDialogPlanChangeAlert {
+    object None : WeekDialogPlanChangeAlert()
+    data class DeletePlan(val week: PlanWeekDomain) : WeekDialogPlanChangeAlert()
+}
+
 /*****************************************************************
  * Interfaces
  ****************************************************************/
@@ -87,8 +91,9 @@ import me.trishiraj.shadowglow.shadowGlow
  * Private functions
  ****************************************************************/
 @Composable
-private fun WeekDialogPlanAddContentHeader(onDismissClick: () -> Unit)
-{
+private fun WeekDialogPlanAddContentHeader(
+    onDismissClick: () -> Unit
+){
     Box(
         modifier = Modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center
@@ -121,7 +126,7 @@ private fun WeekDialogPlanAddContentHeader(onDismissClick: () -> Unit)
 
         ) {
             Text(
-                text = "PLAN",
+                text = "VIEW",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
@@ -132,24 +137,28 @@ private fun WeekDialogPlanAddContentHeader(onDismissClick: () -> Unit)
 }
 
 @Composable
-private fun WeekDialogPlanItem(week: PlanWeekDomain, isSelected: Boolean, isDeleting: Boolean = false, onSelect: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit
+private fun WeekDialogPlanItem(
+    week: PlanWeekDomain,
+    isSelected: Boolean,
+    isDeleting: Boolean = false,
+    onSelect: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
-    var showActions by remember { mutableStateOf(false) }
-
     val borderColor by animateColorAsState(
         targetValue = if(isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
         animationSpec = tween(500),
         label = "borderColor"
     )
 
-    val dotColor by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+    val editIconColor by animateColorAsState(
+        targetValue = if(isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
         animationSpec = tween(300),
-        label = "dotColor"
+        label = "editIconColor"
     )
 
-    val editIconColor by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) else Color.Transparent,
+    val deleteIconColor by animateColorAsState(
+        targetValue = if(isSelected) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
         animationSpec = tween(300),
         label = "editIconColor"
     )
@@ -202,60 +211,45 @@ private fun WeekDialogPlanItem(week: PlanWeekDomain, isSelected: Boolean, isDele
                             )
                         }
                     }
-                    AnimatedVisibility(
-                        visible = isSelected && showActions,
-                        enter = fadeIn(animationSpec = tween(150)),
-                        exit = fadeOut(animationSpec = tween(150))
-                    ) {
-                        Row {
-                            IconButton(
-                                onClick = { onEdit() },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.EditNote,
-                                    contentDescription = "Редактировать",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                            IconButton(
-                                onClick = { onDelete() },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Удалить",
-                                    tint = MaterialTheme.colorScheme.onError,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-                    }
-                    if(isSelected) {
+                    Row {
                         IconButton(
-                            onClick = { showActions = !showActions },
-                            modifier = Modifier.size(32.dp).padding(end = 12.dp)
+                            onClick = { onEdit() },
+                            modifier = Modifier.size(32.dp)
                         ) {
                             Icon(
-                                imageVector = if (showActions) Icons.Default.Close else Icons.Default.EditNote,
-                                contentDescription = if (showActions) "Скрыть" else "Действия",
+                                imageVector = Icons.Default.EditNote,
+                                contentDescription = "Редактировать",
                                 tint = editIconColor,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        IconButton(
+                            onClick = { onDelete() },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Удалить",
+                                tint = deleteIconColor,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
                     }
                 }
-                Box(
-                    modifier = Modifier.size(8.dp).clip(CircleShape).background(dotColor)
-                )
             }
         }
     }
 }
 
 @Composable
-private fun WeekDialogPlanAddContentBody(weeks: List<PlanWeekDomain>, selectedWeekId: Long, deletingWeekIds: Set<Long> = emptySet(), onSelect: (PlanWeekDomain) -> Unit, onEdit: (PlanWeekDomain) -> Unit, onDelete: (PlanWeekDomain) -> Unit) {
+private fun WeekDialogPlanAddContentBody(
+    weeks: List<PlanWeekDomain>,
+    selectedWeekId: Long,
+    deletingWeekIds: Set<Long> = emptySet(),
+    onSelect: (PlanWeekDomain) -> Unit,
+    onEdit: (PlanWeekDomain) -> Unit,
+    onDelete: (PlanWeekDomain) -> Unit
+) {
     val listState = rememberLazyListState()
     Column{
         Box(modifier = Modifier.fillMaxWidth()){
@@ -322,7 +316,10 @@ private fun WeekDialogPlanAddContentBody(weeks: List<PlanWeekDomain>, selectedWe
 }
 
 @Composable
-private fun WeekDialogPlanAddContentFooter(onAdd: () -> Unit, onSave: () -> Unit, onDiscard: () -> Unit) {
+private fun WeekDialogPlanAddContentFooter(
+    onAdd: () -> Unit,
+    onSave: () -> Unit,
+) {
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth()
@@ -353,15 +350,33 @@ private fun WeekDialogPlanAddContentFooter(onAdd: () -> Unit, onSave: () -> Unit
                 fontWeight = FontWeight.Bold
             )
         }
-        TextButton(
-            onClick = onDiscard,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                text = "ОТМЕНИТЬ",
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+    }
+}
+
+@Composable
+private fun WeekDialogPlanChangeAlertHandler(
+    planDialogAlert: WeekDialogPlanChangeAlert,
+    onDismiss: () -> Unit,
+    onDeletePlan: (PlanWeekDomain) -> Unit
+) {
+    when(planDialogAlert) {
+        is WeekDialogPlanChangeAlert.DeletePlan -> {
+            val week = planDialogAlert.week
+            WeekAlert(
+                title = "Удалить план?",
+                description = "Этот план будет удален",
+                confirmText = "Удалить",
+                dismissText = "Отменить",
+                onConfirm = {
+                    onDismiss()
+                    onDeletePlan(week)
+                },
+                onDismiss = {
+                    onDismiss()
+                }
             )
         }
+        is WeekDialogPlanChangeAlert.None -> { }
     }
 }
 
@@ -370,17 +385,23 @@ private fun WeekDialogPlanAddContentFooter(onAdd: () -> Unit, onSave: () -> Unit
  ****************************************************************/
 @OptIn(DelicateCoroutinesApi::class)
 @Composable
-fun WeekDialogPlanChangeContent(viewModel: PlanWeekViewModel = hiltViewModel(), dialogStateChange: (PlanWeekDialogMode) -> Unit) {
+fun WeekDialogPlanChangeContent(
+    viewModel: PlanWeekViewModel = hiltViewModel(),
+    dialogStateChange: (PlanWeekDialogMode) -> Unit
+) {
     val weekDialogState by viewModel.dialogPlanState.collectAsStateWithLifecycle()
     var deletingWeekIds by remember { mutableStateOf(setOf<Long>()) }
-    
-    WeekDialogLoading(weekDialogState.loading) {
+    var planDialogAlert by remember { mutableStateOf<WeekDialogPlanChangeAlert>(WeekDialogPlanChangeAlert.None) }
+
+    WeekLoading(weekDialogState.loading) {
         Column(
             verticalArrangement = Arrangement.spacedBy(15.dp),
             modifier = Modifier.fillMaxSize().padding(25.dp),
         ) {
             WeekDialogPlanAddContentHeader(
-                onDismissClick = { dialogStateChange(PlanWeekDialogMode.IDLE) }
+                onDismissClick = {
+                    dialogStateChange(PlanWeekDialogMode.IDLE)
+                }
             )
 
             Column(
@@ -400,12 +421,7 @@ fun WeekDialogPlanChangeContent(viewModel: PlanWeekViewModel = hiltViewModel(), 
                         dialogStateChange(PlanWeekDialogMode.PLANADD)
                     },
                     onDelete = { week ->
-                        deletingWeekIds = deletingWeekIds + week.id
-                        kotlinx.coroutines.GlobalScope.launch {
-                            kotlinx.coroutines.delay(250)
-                            viewModel.updateWeek(week.copy(title = "", description = ""))
-                            deletingWeekIds = deletingWeekIds - week.id
-                        }
+                        planDialogAlert = WeekDialogPlanChangeAlert.DeletePlan(week)
                     }
                 )
             }
@@ -419,12 +435,21 @@ fun WeekDialogPlanChangeContent(viewModel: PlanWeekViewModel = hiltViewModel(), 
                     viewModel.saveWeeks()
                     dialogStateChange(PlanWeekDialogMode.IDLE)
                 },
-                onDiscard = {
-                    viewModel.discardWeeks()
-                    dialogStateChange(PlanWeekDialogMode.IDLE)
-                }
             )
         }
+
+        WeekDialogPlanChangeAlertHandler(
+            planDialogAlert = planDialogAlert,
+            onDismiss = { planDialogAlert = WeekDialogPlanChangeAlert.None },
+            onDeletePlan = { week ->
+                deletingWeekIds = deletingWeekIds + week.id
+                kotlinx.coroutines.GlobalScope.launch {
+                    kotlinx.coroutines.delay(250)
+                    viewModel.updateWeek(week.copy(title = "", description = ""))
+                    deletingWeekIds = deletingWeekIds - week.id
+                }
+            }
+        )
     }
 }
 
@@ -435,7 +460,8 @@ fun WeekDialogPlanChangeContent(viewModel: PlanWeekViewModel = hiltViewModel(), 
 @Composable
 fun WeekDialogPlanChangeContentPreview() {
     MaterialTheme(
-        colorScheme = DarkColorScheme
+        colorScheme = DarkColorScheme,
+        typography = MyAppFont,
     ) {
         Box(modifier = Modifier.fillMaxSize().padding(35.dp)){
             Card(
@@ -451,7 +477,7 @@ fun WeekDialogPlanChangeContentPreview() {
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.17f)
                     )
             ) {
-                WeekDialogLoading(PlanWeekLoading.Idle) {
+                WeekLoading(PlanWeekLoading.Idle) {
                     Column(
                         verticalArrangement = Arrangement.spacedBy(15.dp),
                         modifier = Modifier.fillMaxSize().padding(25.dp),
@@ -481,7 +507,6 @@ fun WeekDialogPlanChangeContentPreview() {
                         WeekDialogPlanAddContentFooter(
                             onAdd = { },
                             onSave = { },
-                            onDiscard = { }
                         )
                     }
                 }
@@ -489,21 +514,6 @@ fun WeekDialogPlanChangeContentPreview() {
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

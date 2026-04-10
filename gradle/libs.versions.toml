@@ -21,6 +21,7 @@ material3 = "1.4.0"
 foundationLayout = "1.10.2"
 shadowGlow = "2.0.0"
 animation = "1.10.6"
+navigationBar = "1.0.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -53,6 +54,7 @@ androidx-compose-material-icons-extended = { group = "androidx.compose.material"
 androidx-compose-foundation-layout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "foundationLayout" }
 shadow-glow = { group = "me.trishiraj", name = "shadowglow", version.ref = "shadowGlow" }
 androidx-compose-animation = { group = "androidx.compose.animation", name = "animation", version.ref = "animation" }
+navigation-bar = { group = "com.canopas.compose-animated-navigationbar", name = "bottombar", version.ref = "navigationBar" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
