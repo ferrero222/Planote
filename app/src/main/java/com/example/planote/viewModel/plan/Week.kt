@@ -270,7 +270,6 @@ class PlanWeekViewModel @Inject constructor(
             .map { tasks -> sortTimeTasks(tasks) }
     }
 
-    /* DAYBLOCK */
     override suspend fun observeDayTasks(day: PlanWeekDayDomain): Flow<List<PlanWeekDayTaskDomain>> {
         return if (day.id <= 0L) emptyFlow()
         else weekRepository.getWeekDayTasks(day.id).map { tasks -> sortTimeTasks(tasks.map { it.toDomain() }) }

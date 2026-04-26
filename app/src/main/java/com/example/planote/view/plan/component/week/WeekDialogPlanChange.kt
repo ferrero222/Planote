@@ -42,8 +42,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -66,9 +64,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.planote.DarkColorScheme
-import com.example.planote.MyAppFont
+import com.example.planote.PreviewContainer
 import com.example.planote.viewModel.plan.PlanWeekDialogMode
+import com.example.planote.viewModel.plan.PlanWeekDialogPlanDataHolder
 import com.example.planote.viewModel.plan.PlanWeekDomain
 import com.example.planote.viewModel.plan.PlanWeekLoading
 import com.example.planote.viewModel.plan.PlanWeekViewModel
@@ -90,6 +88,61 @@ sealed class WeekDialogPlanChangeAlert {
 /*****************************************************************
  * Private functions
  ****************************************************************/
+@OptIn(DelicateCoroutinesApi::class)
+@Composable
+private fun WeekDialogPlanChangeContent(
+    dialogState: PlanWeekDialogPlanDataHolder,
+    loading: PlanWeekLoading,
+    deletingWeekIds: Set<Long>,
+    onDismissClick: () -> Unit,
+    onSelect: (PlanWeekDomain) -> Unit,
+    onEdit: (PlanWeekDomain) -> Unit,
+    onDelete: (PlanWeekDomain) -> Unit,
+    onAdd: () -> Unit,
+    onSave: () -> Unit,
+    onDeletePlan: (PlanWeekDomain) -> Unit,
+    onDismissAlert: () -> Unit,
+) {
+    var planDialogAlert by remember { mutableStateOf<WeekDialogPlanChangeAlert>(WeekDialogPlanChangeAlert.None) }
+
+    WeekLoading(loading) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(15.dp),
+            modifier = Modifier.fillMaxSize().padding(25.dp),
+        ) {
+            WeekDialogPlanAddContentHeader(
+                onDismissClick = onDismissClick,
+            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(15.dp),
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+            ) {
+                WeekDialogPlanAddContentBody(
+                    weeks = dialogState.weeks,
+                    selectedWeekId = dialogState.weeks.find { it.isToggle && (!it.title.isNullOrEmpty() || !it.description.isNullOrEmpty()) }?.id ?: 0L,
+                    deletingWeekIds = deletingWeekIds,
+                    onSelect = onSelect,
+                    onEdit = onEdit,
+                    onDelete = { week ->
+                        planDialogAlert = WeekDialogPlanChangeAlert.DeletePlan(week)
+                        onDelete(week)
+                    },
+                )
+            }
+            WeekDialogPlanAddContentFooter(
+                onAdd = onAdd,
+                onSave = onSave,
+            )
+        }
+
+        WeekDialogPlanChangeAlertHandler(
+            planDialogAlert = planDialogAlert,
+            onDismiss = onDismissAlert,
+            onDeletePlan = onDeletePlan,
+        )
+    }
+}
+
 @Composable
 private fun WeekDialogPlanAddContentHeader(
     onDismissClick: () -> Unit
@@ -389,68 +442,57 @@ fun WeekDialogPlanChangeContent(
     viewModel: PlanWeekViewModel = hiltViewModel(),
     dialogStateChange: (PlanWeekDialogMode) -> Unit
 ) {
-    val weekDialogState by viewModel.dialogPlanState.collectAsStateWithLifecycle()
+    val dialogState by viewModel.dialogPlanState.collectAsStateWithLifecycle()
     var deletingWeekIds by remember { mutableStateOf(setOf<Long>()) }
     var planDialogAlert by remember { mutableStateOf<WeekDialogPlanChangeAlert>(WeekDialogPlanChangeAlert.None) }
 
-    WeekLoading(weekDialogState.loading) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(15.dp),
-            modifier = Modifier.fillMaxSize().padding(25.dp),
-        ) {
-            WeekDialogPlanAddContentHeader(
-                onDismissClick = {
-                    dialogStateChange(PlanWeekDialogMode.IDLE)
-                }
-            )
-
-            Column(
-                verticalArrangement = Arrangement.spacedBy(15.dp),
-                modifier = Modifier.weight(1f).fillMaxWidth()
-            ) {
-                WeekDialogPlanAddContentBody(
-                    weeks = weekDialogState.weeks,
-                    selectedWeekId = weekDialogState.weeks.find { it.isToggle && (!it.title.isNullOrEmpty() || !it.description.isNullOrEmpty()) }?.id ?: 0L,
-                    deletingWeekIds = deletingWeekIds,
-                    onSelect = { week ->
-                        weekDialogState.weeks.forEach{ w -> viewModel.updateWeek(w.copy(isToggle = false)) }
-                        viewModel.updateWeek(week.copy(isToggle = true))
-                    },
-                    onEdit = { week ->
-                        viewModel.loadEditWeek(week)
-                        dialogStateChange(PlanWeekDialogMode.PLANADD)
-                    },
-                    onDelete = { week ->
-                        planDialogAlert = WeekDialogPlanChangeAlert.DeletePlan(week)
-                    }
-                )
+    WeekDialogPlanChangeContent(
+        dialogState = dialogState,
+        loading = dialogState.loading,
+        deletingWeekIds = deletingWeekIds,
+        onDismissClick = { dialogStateChange(PlanWeekDialogMode.IDLE) },
+        onSelect = { week ->
+            dialogState.weeks.forEach { w -> viewModel.updateWeek(w.copy(isToggle = false)) }
+            viewModel.updateWeek(week.copy(isToggle = true))
+        },
+        onEdit = { week ->
+            viewModel.loadEditWeek(week)
+            dialogStateChange(PlanWeekDialogMode.PLANADD)
+        },
+        onDelete = { week ->
+            planDialogAlert = WeekDialogPlanChangeAlert.DeletePlan(week)
+        },
+        onAdd = {
+            viewModel.loadEditWeek(PlanWeekDomain())
+            dialogStateChange(PlanWeekDialogMode.PLANADD)
+        },
+        onSave = {
+            viewModel.saveWeeks()
+            dialogStateChange(PlanWeekDialogMode.IDLE)
+        },
+        onDeletePlan = { week ->
+            deletingWeekIds = deletingWeekIds + week.id
+            kotlinx.coroutines.GlobalScope.launch {
+                kotlinx.coroutines.delay(250)
+                viewModel.updateWeek(week.copy(title = "", description = ""))
+                deletingWeekIds = deletingWeekIds - week.id
             }
+        },
+        onDismissAlert = { planDialogAlert = WeekDialogPlanChangeAlert.None },
+    )
 
-            WeekDialogPlanAddContentFooter(
-                onAdd = {
-                    viewModel.loadEditWeek(PlanWeekDomain())
-                    dialogStateChange(PlanWeekDialogMode.PLANADD)
-                },
-                onSave = {
-                    viewModel.saveWeeks()
-                    dialogStateChange(PlanWeekDialogMode.IDLE)
-                },
-            )
+    WeekDialogPlanChangeAlertHandler(
+        planDialogAlert = planDialogAlert,
+        onDismiss = { planDialogAlert = WeekDialogPlanChangeAlert.None },
+        onDeletePlan = { week ->
+            deletingWeekIds = deletingWeekIds + week.id
+            kotlinx.coroutines.GlobalScope.launch {
+                kotlinx.coroutines.delay(250)
+                viewModel.updateWeek(week.copy(title = "", description = ""))
+                deletingWeekIds = deletingWeekIds - week.id
+            }
         }
-
-        WeekDialogPlanChangeAlertHandler(
-            planDialogAlert = planDialogAlert,
-            onDismiss = { planDialogAlert = WeekDialogPlanChangeAlert.None },
-            onDeletePlan = { week ->
-                deletingWeekIds = deletingWeekIds + week.id
-                kotlinx.coroutines.GlobalScope.launch {
-                    kotlinx.coroutines.delay(250)
-                    viewModel.updateWeek(week.copy(title = "", description = ""))
-                    deletingWeekIds = deletingWeekIds - week.id
-                }
-            }
-        )
-    }
+    )
 }
 
 /*****************************************************************
@@ -458,59 +500,29 @@ fun WeekDialogPlanChangeContent(
  ****************************************************************/
 @Preview(showBackground = true, backgroundColor = 0xFF121212)
 @Composable
-fun WeekDialogPlanChangeContentPreview() {
-    MaterialTheme(
-        colorScheme = DarkColorScheme,
-        typography = MyAppFont,
-    ) {
-        Box(modifier = Modifier.fillMaxSize().padding(35.dp)){
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                modifier = Modifier
-                    .width(340.dp)
-                    .height(650.dp)
-                    .border(
-                        width = 1.dp,
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.17f)
-                    )
-            ) {
-                WeekLoading(PlanWeekLoading.Idle) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(15.dp),
-                        modifier = Modifier.fillMaxSize().padding(25.dp),
-                    ) {
-                        WeekDialogPlanAddContentHeader(
-                            onDismissClick = { }
-                        )
-
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(15.dp),
-                            modifier = Modifier.weight(1f).fillMaxWidth()
-                        ) {
-                            WeekDialogPlanAddContentBody(
-                                weeks =
-                                    listOf(
-                                    PlanWeekDomain(id = 1, title = "План 1", description = "Основной план", isToggle = true),
-                                    PlanWeekDomain(id = 2, title = "План 2", description = "Запасной вариант", isToggle = false),
-                                    PlanWeekDomain(id = 3, title = "План 3", description = "", isToggle = false)
-                                ),
-                                selectedWeekId = 1L,
-                                onSelect = { },
-                                onEdit = { },
-                                onDelete = { }
-                            )
-                        }
-
-                        WeekDialogPlanAddContentFooter(
-                            onAdd = { },
-                            onSave = { },
-                        )
-                    }
-                }
-            }
+fun WeekDialogPlanChangeContentPreview(
+    weeks: List<PlanWeekDomain> = listOf(
+        PlanWeekDomain(id = 1, title = "План 1", description = "Основной план", isToggle = true),
+        PlanWeekDomain(id = 2, title = "План 2", description = "Запасной вариант", isToggle = false),
+        PlanWeekDomain(id = 3, title = "План 3", description = "", isToggle = false)
+    ),
+    loading: PlanWeekLoading = PlanWeekLoading.Idle
+) {
+    PreviewContainer {
+        WeekDialogCard {
+            WeekDialogPlanChangeContent(
+                dialogState = PlanWeekDialogPlanDataHolder(weeks = weeks),
+                loading = loading,
+                deletingWeekIds = emptySet(),
+                onDismissClick = {},
+                onSelect = {},
+                onEdit = {},
+                onDelete = {},
+                onAdd = {},
+                onSave = {},
+                onDeletePlan = {},
+                onDismissAlert = {},
+            )
         }
     }
 }

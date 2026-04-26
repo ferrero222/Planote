@@ -28,6 +28,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.example.planote.viewModel.plan.PlanWeekDialogMode
@@ -93,15 +94,7 @@ fun WeekDialog(
                 PlanWeekDialogMode.IDLE -> weekDialogAlert = WeekDialogAlert.None
             }
         }) {
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                modifier = Modifier
-                    .width(340.dp)
-                    .height(650.dp)
-                    .border(width = 1.dp, shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.17f))
-            ) {
+            WeekDialogCard {
                 AnimatedContent(
                     targetState = dialogState,
                     label = "Dialog mode transition",
@@ -128,4 +121,21 @@ fun WeekDialog(
         dialogStateChange = dialogStateChange,
         onDismiss = { weekDialogAlert = WeekDialogAlert.None }
     )
+}
+
+@Composable
+fun WeekDialogCard(
+    content: @Composable () -> Unit,
+) {
+    Card(
+        shape = RectangleShape,
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = Modifier
+            .width(340.dp)
+            .height(650.dp)
+            .border(width = 1.dp, shape = RectangleShape, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.17f))
+    ) {
+        content()
+    }
 }

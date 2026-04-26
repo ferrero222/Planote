@@ -8,6 +8,7 @@ package com.example.planote.view
 /*****************************************************************
  * Imported packages
  ****************************************************************/
+import android.content.res.Configuration.ORIENTATION_LANDSCAPE
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -30,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.bottombar.AnimatedBottomBar
@@ -37,6 +39,7 @@ import com.example.bottombar.components.BottomBarItem
 import com.example.bottombar.model.IndicatorStyle
 import com.example.bottombar.model.ItemStyle
 import com.example.planote.DarkColorScheme
+import com.example.planote.isLandscape
 import com.example.planote.view.note.NotesPage
 import com.example.planote.view.plan.PlannerPage
 import com.example.planote.view.server.ServerPage
@@ -102,8 +105,9 @@ private fun BottomNavigationBar(
     Box(
         modifier = modifier.background(MaterialTheme.colorScheme.surface)
     ) {
+        val orientation = LocalConfiguration.current.orientation
         AnimatedBottomBar(
-            bottomBarHeight = 60.dp,
+            bottomBarHeight = if(isLandscape()) 40.dp else 60.dp,
             selectedItem = selectedIndex,
             itemSize = Screen.items.size,
             containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.6f),
@@ -117,9 +121,9 @@ private fun BottomNavigationBar(
                     imageVector = screen.icon,
                     label = screen.title,
                     containerColor = Color.Transparent,
-                    contentColor = if(index == selectedIndex) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                    iconColor = if(index == selectedIndex) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                    textColor = if(index == selectedIndex) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    contentColor = if(index == selectedIndex) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
+                    iconColor = if(index == selectedIndex) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
+                    textColor = if(index == selectedIndex) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
                     itemStyle = ItemStyle.STYLE4
                 )
             }

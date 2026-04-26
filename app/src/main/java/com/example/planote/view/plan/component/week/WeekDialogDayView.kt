@@ -16,7 +16,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,7 +28,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -43,8 +41,6 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -67,8 +63,10 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.planote.DarkColorScheme
 import com.example.planote.MyAppFont
+import com.example.planote.PreviewContainer
 import com.example.planote.viewModel.plan.PlanWeekDayDomain
 import com.example.planote.viewModel.plan.PlanWeekDayTaskDomain
+import com.example.planote.viewModel.plan.PlanWeekDialogDayDataHolder
 import com.example.planote.viewModel.plan.PlanWeekDialogMode
 import com.example.planote.viewModel.plan.PlanWeekLoading
 import com.example.planote.viewModel.plan.PlanWeekViewModel
@@ -89,6 +87,36 @@ import java.util.Locale
 /*****************************************************************
  * Private functions
  ****************************************************************/
+@Composable
+private fun WeekDialogDayViewContent(
+    dialogState: PlanWeekDialogDayDataHolder,
+    loading: PlanWeekLoading,
+    onDismissClick: () -> Unit,
+    onEdit: () -> Unit,
+) {
+    WeekLoading(loading) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(15.dp),
+            modifier = Modifier.fillMaxSize().padding(25.dp),
+        ) {
+            WeekDialogDayViewContentHeader(
+                day = dialogState.day,
+                onDismissClick = onDismissClick,
+            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(15.dp),
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+            ) {
+                WeekDialogDayViewContentDescription(day = dialogState.day)
+                WeekDialogDayViewContentTasks(tasks = dialogState.tasks)
+            }
+            WeekDialogDayViewContentFooter(
+                onEdit = onEdit,
+            )
+        }
+    }
+}
+
 @Composable
 private fun WeekDialogDayViewContentHeader(
     day: PlanWeekDayDomain,
@@ -353,30 +381,14 @@ fun WeekDialogDayViewContent(
     viewModel: PlanWeekViewModel = hiltViewModel(),
     dialogStateChange: (PlanWeekDialogMode) -> Unit
 ) {
-    val weekDialogState by viewModel.dialogDayState.collectAsStateWithLifecycle()
-    WeekLoading(weekDialogState.loading) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(15.dp),
-            modifier = Modifier.fillMaxSize().padding(25.dp),
-        ) {
-            WeekDialogDayViewContentHeader(
-                day = weekDialogState.day,
-                onDismissClick = { dialogStateChange(PlanWeekDialogMode.IDLE) }
-            )
+    val dialogState by viewModel.dialogDayState.collectAsStateWithLifecycle()
 
-            Column(
-                verticalArrangement = Arrangement.spacedBy(15.dp),
-                modifier = Modifier.weight(1f).fillMaxWidth()
-            ) {
-                WeekDialogDayViewContentDescription(day = weekDialogState.day)
-                WeekDialogDayViewContentTasks(tasks = weekDialogState.tasks)
-            }
-
-            WeekDialogDayViewContentFooter(
-                onEdit = { dialogStateChange(PlanWeekDialogMode.DAYEDIT) }
-            )
-        }
-    }
+    WeekDialogDayViewContent(
+        dialogState = dialogState,
+        loading = dialogState.loading,
+        onDismissClick = { dialogStateChange(PlanWeekDialogMode.IDLE) },
+        onEdit = { dialogStateChange(PlanWeekDialogMode.DAYEDIT) },
+    )
 }
 
 /*****************************************************************
@@ -384,54 +396,27 @@ fun WeekDialogDayViewContent(
  ****************************************************************/
 @Preview(showBackground = true, backgroundColor = 0xFF121212)
 @Composable
-fun WeekDialogDayViewContentPreview() {
-    MaterialTheme(
-        colorScheme = DarkColorScheme,
-        typography = MyAppFont,
-    ) {
-        Box(modifier = Modifier.fillMaxSize().padding(35.dp)){
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                modifier = Modifier
-                    .width(340.dp)
-                    .height(650.dp)
-                    .border(
-                        width = 1.dp,
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.17f)
-                    )
-            ) {
-                WeekLoading(PlanWeekLoading.Idle) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(15.dp),
-                        modifier = Modifier.fillMaxSize().padding(25.dp),
-                    ) {
-                        WeekDialogDayViewContentHeader(
-                            day = PlanWeekDayDomain(),
-                            onDismissClick = {}
-                        )
-
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(15.dp),
-                            modifier = Modifier.weight(1f).fillMaxWidth()
-                        ) {
-                            WeekDialogDayViewContentDescription(day = PlanWeekDayDomain(id = 1, title = "Пример названия"),)
-                            WeekDialogDayViewContentTasks(tasks = listOf(
-                                PlanWeekDayTaskDomain(id = 1, title = "Задача 1", description = "Основной план", time = LocalTime.NOON),
-                                PlanWeekDayTaskDomain(id = 5, title = "Задача 1", description = "Основной план"),
-                                PlanWeekDayTaskDomain(id = 4, title = "Задача 1", time = LocalTime.NOON),
-                                PlanWeekDayTaskDomain(id = 2, title = "Задача 2", description = "Запасной варианfffdsfsfsdfdsfsdfdsтdsadsadsadsadad", time = LocalTime.NOON),
-                                PlanWeekDayTaskDomain(id = 3, title = "Задача 3", description = "")))
-                        }
-
-                        WeekDialogDayViewContentFooter(
-                            onEdit = {}
-                        )
-                    }
-                }
-            }
+fun WeekDialogDayViewContentPreview(
+    day: PlanWeekDayDomain = PlanWeekDayDomain(
+        id = 1,
+        num = 0,
+        title = "План на понедельник"
+    ),
+    tasks: List<PlanWeekDayTaskDomain> = listOf(
+        PlanWeekDayTaskDomain(id = 1, title = "Задача 1", description = "Основной план", time = LocalTime.NOON),
+        PlanWeekDayTaskDomain(id = 2, title = "Задача 2", description = "Запасной вариант", isDone = false),
+        PlanWeekDayTaskDomain(id = 3, title = "Задача 3", description = "")
+    ),
+    loading: PlanWeekLoading = PlanWeekLoading.Idle
+) {
+    PreviewContainer{
+        WeekDialogCard{
+            WeekDialogDayViewContent(
+                dialogState = PlanWeekDialogDayDataHolder(day = day, tasks = tasks),
+                loading = loading,
+                onDismissClick = {},
+                onEdit = {},
+            )
         }
     }
 }

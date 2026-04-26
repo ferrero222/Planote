@@ -52,7 +52,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.planote.DarkColorScheme
 import com.example.planote.MyAppFont
+import com.example.planote.PreviewContainer
 import com.example.planote.viewModel.plan.PlanWeekDialogMode
+import com.example.planote.viewModel.plan.PlanWeekDialogPlanDataHolder
 import com.example.planote.viewModel.plan.PlanWeekDomain
 import com.example.planote.viewModel.plan.PlanWeekLoading
 import com.example.planote.viewModel.plan.PlanWeekViewModel
@@ -73,6 +75,45 @@ sealed class WeekDialogPlanAddAlert {
 /*****************************************************************
  * Private functions
  ****************************************************************/
+@Composable
+private fun WeekDialogPlanAddContent(
+    dialogState: PlanWeekDialogPlanDataHolder,
+    loading: PlanWeekLoading,
+    onDismissClick: () -> Unit,
+    onTitleChange: (String) -> Unit,
+    onDescChange: (String) -> Unit,
+    onSave: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    WeekLoading(loading) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(15.dp),
+            modifier = Modifier.fillMaxSize().padding(25.dp),
+        ) {
+            WeekDialogPlanAddContentHeader(
+                onDismissClick = onDismissClick,
+            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(15.dp),
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+            ) {
+                WeekDialogPlanAddContentTitle(
+                    week = dialogState.editWeek,
+                    onTitleChange = onTitleChange,
+                )
+                WeekDialogPlanAddContentDescription(
+                    week = dialogState.editWeek,
+                    onDescChange = onDescChange,
+                )
+            }
+            WeekDialogPlanAddContentFooter(
+                onSave = onSave,
+                onCancel = onCancel,
+            )
+        }
+    }
+}
+
 @Composable
 private fun WeekDialogPlanAddContentHeader(
     onDismissClick: () -> Unit
@@ -242,7 +283,7 @@ private fun WeekDialogPlanAddAlertHandler(
     planDialogAlert: WeekDialogPlanAddAlert,
     viewModel: PlanWeekViewModel,
     dialogStateChange: (PlanWeekDialogMode) -> Unit,
-    planDialogState: com.example.planote.viewModel.plan.PlanWeekDialogPlanDataHolder,
+    planDialogState: PlanWeekDialogPlanDataHolder,
     onDismiss: () -> Unit
 ) {
     when(planDialogAlert) {
@@ -290,56 +331,29 @@ fun WeekDialogPlanAddContent(
     viewModel: PlanWeekViewModel = hiltViewModel(),
     dialogStateChange: (PlanWeekDialogMode) -> Unit
 ) {
-    val planDialogState by viewModel.dialogPlanState.collectAsStateWithLifecycle()
+    val dialogState by viewModel.dialogPlanState.collectAsStateWithLifecycle()
     var planDialogAlert by remember { mutableStateOf<WeekDialogPlanAddAlert>(WeekDialogPlanAddAlert.None) }
-    WeekLoading(planDialogState.loading) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(15.dp),
-            modifier = Modifier.fillMaxSize().padding(25.dp),
-        ) {
-            WeekDialogPlanAddContentHeader(
-                onDismissClick = {
-                    planDialogAlert = WeekDialogPlanAddAlert.DismissChanges
-                }
-            )
 
-            Column(
-                verticalArrangement = Arrangement.spacedBy(15.dp),
-                modifier = Modifier.weight(1f).fillMaxWidth()
-            ) {
-                WeekDialogPlanAddContentTitle(
-                    week = planDialogState.editWeek,
-                    onTitleChange = { newTitle ->
-                        viewModel.updateEditWeek(planDialogState.editWeek.copy(title = newTitle))
-                    }
-                )
-                WeekDialogPlanAddContentDescription(
-                    week = planDialogState.editWeek,
-                    onDescChange = { newDesc ->
-                        viewModel.updateEditWeek(planDialogState.editWeek.copy(description = newDesc))
-                    }
-                )
-            }
+    WeekDialogPlanAddContent(
+        dialogState = dialogState,
+        loading = dialogState.loading,
+        onDismissClick = { planDialogAlert = WeekDialogPlanAddAlert.DismissChanges },
+        onTitleChange = { newTitle -> viewModel.updateEditWeek(dialogState.editWeek.copy(title = newTitle)) },
+        onDescChange = { newDesc -> viewModel.updateEditWeek(dialogState.editWeek.copy(description = newDesc)) },
+        onSave = {
+            viewModel.saveEditWeek()
+            dialogStateChange(PlanWeekDialogMode.PLANCHANGE)
+        },
+        onCancel = { planDialogAlert = WeekDialogPlanAddAlert.DiscardChanges },
+    )
 
-            WeekDialogPlanAddContentFooter(
-                onSave = {
-                    viewModel.saveEditWeek()
-                    dialogStateChange(PlanWeekDialogMode.PLANCHANGE)
-                },
-                onCancel = {
-                    planDialogAlert = WeekDialogPlanAddAlert.DiscardChanges
-                },
-            )
-        }
-
-        WeekDialogPlanAddAlertHandler(
-            planDialogAlert = planDialogAlert,
-            viewModel = viewModel,
-            dialogStateChange = dialogStateChange,
-            planDialogState = planDialogState,
-            onDismiss = { planDialogAlert = WeekDialogPlanAddAlert.None }
-        )
-    }
+    WeekDialogPlanAddAlertHandler(
+        planDialogAlert = planDialogAlert,
+        viewModel = viewModel,
+        dialogStateChange = dialogStateChange,
+        planDialogState = dialogState,
+        onDismiss = { planDialogAlert = WeekDialogPlanAddAlert.None }
+    )
 }
 
 /*****************************************************************
@@ -347,54 +361,25 @@ fun WeekDialogPlanAddContent(
  ****************************************************************/
 @Preview(showBackground = true, backgroundColor = 0xFF121212)
 @Composable
-fun WeekDialogPlanAddContentPreview() {
-    MaterialTheme(
-        colorScheme = DarkColorScheme,
-        typography = MyAppFont,
-    ) {
-        Box(modifier = Modifier.fillMaxSize().padding(35.dp)){
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                modifier = Modifier
-                    .width(340.dp)
-                    .height(650.dp)
-                    .border(
-                        width = 1.dp,
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.17f)
-                    )
-            ) {
-                WeekLoading(PlanWeekLoading.Idle) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(15.dp),
-                        modifier = Modifier.fillMaxSize().padding(25.dp),
-                    ) {
-                        WeekDialogPlanAddContentHeader(
-                            onDismissClick = {}
-                        )
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(15.dp),
-                            modifier = Modifier.weight(1f).fillMaxWidth()
-                        ) {
-                            WeekDialogPlanAddContentTitle(
-                                week = PlanWeekDomain(id = 1, title = "Неделя", description = "Описание да"),
-                                onTitleChange = {}
-                            )
-                            WeekDialogPlanAddContentDescription(
-                                week = PlanWeekDomain(id = 1, title = "Неделя", description = "Описание да"),
-                                onDescChange = {}
-                            )
-                        }
-
-                        WeekDialogPlanAddContentFooter(
-                            onSave = {},
-                            onCancel = {},
-                        )
-                    }
-                }
-            }
+fun WeekDialogPlanAddContentPreview(
+    editWeek: PlanWeekDomain = PlanWeekDomain(
+        id = 1,
+        title = "План на неделю",
+        description = "Описание плана на неделю"
+    ),
+    loading: PlanWeekLoading = PlanWeekLoading.Idle
+) {
+    PreviewContainer{
+        WeekDialogCard {
+            WeekDialogPlanAddContent(
+                dialogState = PlanWeekDialogPlanDataHolder(editWeek = editWeek),
+                loading = loading,
+                onDismissClick = {},
+                onTitleChange = {},
+                onDescChange = {},
+                onSave = {},
+                onCancel = {},
+            )
         }
     }
 }

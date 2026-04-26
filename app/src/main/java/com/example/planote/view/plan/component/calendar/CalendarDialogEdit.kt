@@ -40,8 +40,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
@@ -69,6 +67,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.planote.DarkColorScheme
 import com.example.planote.MyAppFont
+import com.example.planote.PreviewContainer
 import com.example.planote.viewModel.plan.PlanCalendarDialogDataHolder
 import com.example.planote.viewModel.plan.PlanCalendarDialogMode
 import com.example.planote.viewModel.plan.PlanCalendarEntityDomain
@@ -77,6 +76,7 @@ import com.example.planote.viewModel.plan.PlanCalendarTaskDomain
 import com.example.planote.viewModel.plan.PlanCalendarType
 import com.example.planote.viewModel.plan.PlanCalendarViewModel
 import me.trishiraj.shadowglow.shadowGlow
+import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
 
@@ -96,6 +96,52 @@ sealed class CalendarDialogEditAlert {
 /*****************************************************************
  * Private functions
  ****************************************************************/
+@Composable
+private fun CalendarDialogEditContent(
+    dialogState: PlanCalendarDialogDataHolder,
+    type: PlanCalendarType,
+    loading: PlanCalendarLoading,
+    onDismissClick: () -> Unit,
+    onTitleChange: (String) -> Unit,
+    onTaskToggle: (PlanCalendarTaskDomain) -> Unit,
+    onTaskEdit: (PlanCalendarTaskDomain) -> Unit,
+    onTaskDelete: (PlanCalendarTaskDomain) -> Unit,
+    onSave: () -> Unit,
+    onDelete: () -> Unit
+) {
+    CalendarLoading(loading) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(15.dp),
+            modifier = Modifier.fillMaxSize().padding(25.dp),
+        ) {
+            CalendarDialogEditContentHeader(
+                entity = dialogState.entity,
+                type = type,
+                onDismissClick = onDismissClick
+            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(15.dp),
+                modifier = Modifier.weight(1f).fillMaxWidth()
+            ) {
+                CalendarDialogEditContentDescription(
+                    entity = dialogState.entity,
+                    onTitleChange = onTitleChange
+                )
+                CalendarDialogEditContentTasks(
+                    tasks = dialogState.tasks,
+                    onTaskToggle = onTaskToggle,
+                    onTaskEdit = onTaskEdit,
+                    onTaskDelete = onTaskDelete,
+                )
+            }
+            CalendarDialogEditContentFooter(
+                onSave = onSave,
+                onDelete = onDelete,
+            )
+        }
+    }
+}
+
 @Composable
 private fun CalendarDialogEditContentHeader(
     entity: PlanCalendarEntityDomain,
@@ -397,9 +443,6 @@ private fun CalendarDialogEditContentFooter(
     }
 }
 
-/*****************************************************************
- * Private functions
- ****************************************************************/
 @Composable
 private fun CalendarDialogEditAlertHandler(
     calendarDialogAlert: CalendarDialogEditAlert,
@@ -464,6 +507,9 @@ private fun CalendarDialogEditAlertHandler(
     }
 }
 
+/*****************************************************************
+ * Public functions
+ ****************************************************************/
 @Composable
 fun CalendarDialogEditContent(
     viewModel: PlanCalendarViewModel = hiltViewModel(),
@@ -472,64 +518,36 @@ fun CalendarDialogEditContent(
     val calendarDialogState by viewModel.dialogState.collectAsStateWithLifecycle()
     val calendarDataState by viewModel.dataState.collectAsStateWithLifecycle()
     var calendarDialogAlert by remember { mutableStateOf<CalendarDialogEditAlert>(CalendarDialogEditAlert.None) }
-    CalendarLoading(calendarDialogState.loading)
-    {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(15.dp),
-            modifier = Modifier.fillMaxSize().padding(25.dp),
-        ) {
-            CalendarDialogEditContentHeader( //header
-                entity = calendarDialogState.entity,
-                type = calendarDataState.type,
-                onDismissClick = {
-                    calendarDialogAlert = CalendarDialogEditAlert.DiscardChanges
-                }
-            )
-            Column(
-                verticalArrangement = Arrangement.spacedBy(15.dp),
-                modifier = Modifier.weight(1f).fillMaxWidth()
-            ) {
-                CalendarDialogEditContentDescription( //description
-                    entity = calendarDialogState.entity,
-                    onTitleChange = { newTitle -> viewModel.updateEntity(calendarDialogState.entity.copy(title = newTitle))}
-                )
-                CalendarDialogEditContentTasks( //tasks
-                    tasks = calendarDialogState.tasks,
-                    onTaskToggle = {
-                        task -> viewModel.updateTask(task)
-                    },
-                    onTaskEdit = {task ->
-                        viewModel.loadEditTask(task)
-                        dialogStateChange(PlanCalendarDialogMode.TASK)
-                    },
-                    onTaskDelete = { task ->
-                        calendarDialogAlert = CalendarDialogEditAlert.DeleteTask(task = task)
-                    },
-                )
-            }
+    
+    CalendarDialogEditContent(
+        dialogState = calendarDialogState,
+        type = calendarDataState.type,
+        onDismissClick = { calendarDialogAlert = CalendarDialogEditAlert.DiscardChanges },
+        onTitleChange = { newTitle -> viewModel.updateEntity(calendarDialogState.entity.copy(title = newTitle)) },
+        onTaskToggle = { task -> viewModel.updateTask(task) },
+        onDelete = { calendarDialogAlert = CalendarDialogEditAlert.DeleteEntity },
+        onTaskDelete = { task -> calendarDialogAlert = CalendarDialogEditAlert.DeleteTask(task = task) },
+        onTaskEdit = { task ->
+            viewModel.loadEditTask(task)
+            dialogStateChange(PlanCalendarDialogMode.TASK)
+        },
+        onSave = {
+            viewModel.saveEntityAndTasks()
+            if(calendarDialogState.entity.title.isNullOrEmpty() && calendarDialogState.tasks.isEmpty())
+                dialogStateChange(PlanCalendarDialogMode.IDLE)
+            else
+                dialogStateChange(PlanCalendarDialogMode.VIEW)
+        },
+        loading = calendarDialogState.loading
+    )
 
-            CalendarDialogEditContentFooter( //footer
-                onSave = {
-                    viewModel.saveEntityAndTasks()
-                    if(calendarDialogState.entity.title.isNullOrEmpty() && calendarDialogState.tasks.isEmpty())
-                        dialogStateChange(PlanCalendarDialogMode.IDLE)
-                    else
-                        dialogStateChange(PlanCalendarDialogMode.VIEW)
-                },
-                onDelete = {
-                    calendarDialogAlert = CalendarDialogEditAlert.DeleteEntity
-                },
-            )
-        }
-
-        CalendarDialogEditAlertHandler(
-            calendarDialogAlert = calendarDialogAlert,
-            viewModel = viewModel,
-            dialogStateChange = dialogStateChange,
-            calendarDialogState = calendarDialogState,
-            onDismiss = { calendarDialogAlert = CalendarDialogEditAlert.None }
-        )
-    }
+    CalendarDialogEditAlertHandler(
+        calendarDialogAlert = calendarDialogAlert,
+        viewModel = viewModel,
+        dialogStateChange = dialogStateChange,
+        calendarDialogState = calendarDialogState,
+        onDismiss = { calendarDialogAlert = CalendarDialogEditAlert.None }
+    )
 }
 
 /*****************************************************************
@@ -537,62 +555,34 @@ fun CalendarDialogEditContent(
  ****************************************************************/
 @Preview(showBackground = true, backgroundColor = 0xFF121212)
 @Composable
-fun CalendarDialogEditContentPreview() {
-    MaterialTheme(
-        colorScheme = DarkColorScheme,
-        typography = MyAppFont,
-    ) {
-        Box(modifier = Modifier.fillMaxSize().padding(35.dp)){
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                modifier = Modifier
-                    .width(340.dp)
-                    .height(650.dp)
-                    .border(
-                        width = 1.dp,
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.17f)
-                    )
-            ) {
-                CalendarLoading(PlanCalendarLoading.Idle)
-                {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(15.dp),
-                        modifier = Modifier.fillMaxSize().padding(25.dp),
-                    ) {
-                        CalendarDialogEditContentHeader( //header
-                            entity = PlanCalendarEntityDomain(),
-                            type = PlanCalendarType.DAYS,
-                            onDismissClick = {}
-                        )
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(15.dp),
-                            modifier = Modifier.weight(1f).fillMaxWidth()
-                        ) {
-                            CalendarDialogEditContentDescription( //description
-                                entity = PlanCalendarEntityDomain(title = "Пример описанисая"),
-                                onTitleChange = {}
-                            )
-                            CalendarDialogEditContentTasks( //tasks
-                                tasks = listOf(
-                                    PlanCalendarTaskDomain(id = 1, title = "Задача 1", description = "Основной план", isDone = true),
-                                    PlanCalendarTaskDomain(id = 2, title = "Задача 2", description = "Запасной варианfffdsfsfsdfdsfsdfdsтdsadsadsadsadad", isDone = false),
-                                    PlanCalendarTaskDomain(id = 3, title = "Задача 3", description = "", isDone = false)),
-                                onTaskToggle = {},
-                                onTaskEdit = {},
-                                onTaskDelete = {},
-                            )
-                        }
-
-                        CalendarDialogEditContentFooter( //footer
-                            onSave = {},
-                            onDelete = {},
-                        )
-                    }
-                }
-            }
+fun CalendarDialogEditContentPreview(
+    entity: PlanCalendarEntityDomain = PlanCalendarEntityDomain(
+        id = 1,
+        title = "План на день",
+        date = LocalDate.now()
+    ),
+    tasks: List<PlanCalendarTaskDomain> = listOf(
+        PlanCalendarTaskDomain(id = 1, title = "Задача 1", description = "Основной план", isDone = true),
+        PlanCalendarTaskDomain(id = 2, title = "Задача 2", description = "Запасной вариант", isDone = false),
+        PlanCalendarTaskDomain(id = 3, title = "Задача 3", description = "", isDone = false)
+    ),
+    type: PlanCalendarType = PlanCalendarType.DAYS,
+    loading: PlanCalendarLoading = PlanCalendarLoading.Idle
+) {
+    PreviewContainer {
+        CalendarDialogCard {
+            CalendarDialogEditContent(
+                dialogState = PlanCalendarDialogDataHolder(entity = entity, tasks = tasks),
+                type = type,
+                loading = loading,
+                onDismissClick = {},
+                onTitleChange = {},
+                onTaskToggle = {},
+                onTaskEdit = {},
+                onTaskDelete = {},
+                onSave = {},
+                onDelete = {}
+            )
         }
     }
 }

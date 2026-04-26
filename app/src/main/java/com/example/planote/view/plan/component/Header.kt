@@ -55,7 +55,7 @@ fun HeaderBlock() {
                 ),
         )
         Text(
-            text = "Панель расписания",
+            text = "ПАНЕЛЬ.РАСПИСАНИЯ",
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,

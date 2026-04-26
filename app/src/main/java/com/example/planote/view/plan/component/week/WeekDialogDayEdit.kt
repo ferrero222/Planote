@@ -68,6 +68,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.planote.DarkColorScheme
 import com.example.planote.MyAppFont
+import com.example.planote.PreviewContainer
 import com.example.planote.viewModel.plan.PlanWeekDayDomain
 import com.example.planote.viewModel.plan.PlanWeekDayTaskDomain
 import com.example.planote.viewModel.plan.PlanWeekDialogDayDataHolder
@@ -98,6 +99,48 @@ sealed class WeekDialogDayEditAlert {
 /*****************************************************************
  * Private functions
  ****************************************************************/
+@Composable
+private fun WeekDialogDayEditContent(
+    dialogState: PlanWeekDialogDayDataHolder,
+    loading: PlanWeekLoading,
+    onDismissClick: () -> Unit,
+    onTitleChange: (String) -> Unit,
+    onTaskEdit: (PlanWeekDayTaskDomain) -> Unit,
+    onTaskDelete: (PlanWeekDayTaskDomain) -> Unit,
+    onSave: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    WeekLoading(loading) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(15.dp),
+            modifier = Modifier.fillMaxSize().padding(25.dp),
+        ) {
+            WeekDialogDayEditContentHeader(
+                day = dialogState.day,
+                onDismissClick = onDismissClick,
+            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(15.dp),
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+            ) {
+                WeekDialogDayEditContentDescription(
+                    day = dialogState.day,
+                    onTitleChange = onTitleChange,
+                )
+                WeekDialogDayEditContentTasks(
+                    tasks = dialogState.tasks,
+                    onTaskEdit = onTaskEdit,
+                    onTaskDelete = onTaskDelete,
+                )
+            }
+            WeekDialogDayEditContentFooter(
+                onSave = onSave,
+                onDelete = onDelete,
+            )
+        }
+    }
+}
+
 @Composable
 private fun WeekDialogDayEditContentHeader(
     day: PlanWeekDayDomain,
@@ -462,62 +505,36 @@ fun WeekDialogDayEditContent(
     viewModel: PlanWeekViewModel = hiltViewModel(),
     dialogStateChange: (PlanWeekDialogMode) -> Unit
 ) {
-    val weekDialogState by viewModel.dialogDayState.collectAsStateWithLifecycle()
+    val dialogState by viewModel.dialogDayState.collectAsStateWithLifecycle()
     var weekDialogAlert by remember { mutableStateOf<WeekDialogDayEditAlert>(WeekDialogDayEditAlert.None) }
-    WeekLoading(weekDialogState.loading)
-    {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(15.dp),
-            modifier = Modifier.fillMaxSize().padding(25.dp),
-        ) {
-            WeekDialogDayEditContentHeader( //header
-                day = weekDialogState.day,
-                onDismissClick = {
-                    weekDialogAlert = WeekDialogDayEditAlert.DiscardChanges
-                }
-            )
-            Column(
-                verticalArrangement = Arrangement.spacedBy(15.dp),
-                modifier = Modifier.weight(1f).fillMaxWidth()
-            ) {
-                WeekDialogDayEditContentDescription( //description
-                    day = weekDialogState.day,
-                    onTitleChange = { newTitle -> viewModel.updateDay(weekDialogState.day.copy(title = newTitle))}
-                )
-                WeekDialogDayEditContentTasks( //tasks
-                    tasks = weekDialogState.tasks,
-                    onTaskEdit = {task ->
-                        viewModel.loadEditTask(task)
-                        dialogStateChange(PlanWeekDialogMode.DAYTASK)
-                    },
-                    onTaskDelete = { task ->
-                        weekDialogAlert = WeekDialogDayEditAlert.DeleteTask(task = task)
-                    },
-                )
-            }
 
-            WeekDialogDayEditContentFooter( //footer
-                onSave = {
-                    viewModel.saveDayAndTasks()
-                    if(weekDialogState.day.title.isNullOrEmpty() && weekDialogState.tasks.isEmpty())
-                        dialogStateChange(PlanWeekDialogMode.IDLE)
-                    else
-                        dialogStateChange(PlanWeekDialogMode.DAYVIEW)
-                },
-                onDelete = {
-                    weekDialogAlert = WeekDialogDayEditAlert.DeleteEntity
-                },
-            )
-        }
+    WeekDialogDayEditContent(
+        dialogState = dialogState,
+        loading = dialogState.loading,
+        onDismissClick = { weekDialogAlert = WeekDialogDayEditAlert.DiscardChanges },
+        onTitleChange = { newTitle -> viewModel.updateDay(dialogState.day.copy(title = newTitle)) },
+        onTaskEdit = { task ->
+            viewModel.loadEditTask(task)
+            dialogStateChange(PlanWeekDialogMode.DAYTASK)
+        },
+        onTaskDelete = { task -> weekDialogAlert = WeekDialogDayEditAlert.DeleteTask(task) },
+        onSave = {
+            viewModel.saveDayAndTasks()
+            if (dialogState.day.title.isNullOrEmpty() && dialogState.tasks.isEmpty())
+                dialogStateChange(PlanWeekDialogMode.IDLE)
+            else
+                dialogStateChange(PlanWeekDialogMode.DAYVIEW)
+        },
+        onDelete = { weekDialogAlert = WeekDialogDayEditAlert.DeleteEntity },
+    )
 
-        WeekDialogDayEditAlertHandler(
-            weekDialogAlert = weekDialogAlert,
-            viewModel = viewModel,
-            dialogStateChange = dialogStateChange,
-            weekDialogState = weekDialogState,
-            onDismiss = { weekDialogAlert = WeekDialogDayEditAlert.None }
-        )
-    }
+    WeekDialogDayEditAlertHandler(
+        weekDialogAlert = weekDialogAlert,
+        viewModel = viewModel,
+        dialogStateChange = dialogStateChange,
+        weekDialogState = dialogState,
+        onDismiss = { weekDialogAlert = WeekDialogDayEditAlert.None }
+    )
 }
 
 /*****************************************************************
@@ -525,60 +542,31 @@ fun WeekDialogDayEditContent(
  ****************************************************************/
 @Preview(showBackground = true, backgroundColor = 0xFF121212)
 @Composable
-fun WeekDialogDayEditContentPreview() {
-    MaterialTheme(
-        colorScheme = DarkColorScheme,
-        typography = MyAppFont,
-    ) {
-        Box(modifier = Modifier.fillMaxSize().padding(35.dp)){
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                modifier = Modifier
-                    .width(340.dp)
-                    .height(650.dp)
-                    .border(
-                        width = 1.dp,
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.17f)
-                    )
-            ) {
-                WeekLoading(PlanWeekLoading.Idle)
-                {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(15.dp),
-                        modifier = Modifier.fillMaxSize().padding(25.dp),
-                    ) {
-                        WeekDialogDayEditContentHeader( //header
-                            day = PlanWeekDayDomain(),
-                            onDismissClick = {}
-                        )
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(15.dp),
-                            modifier = Modifier.weight(1f).fillMaxWidth()
-                        ) {
-                            WeekDialogDayEditContentDescription( //description
-                                day = PlanWeekDayDomain(id = 1, title = "Пример названия"),
-                                onTitleChange = {}
-                            )
-                            WeekDialogDayEditContentTasks( //tasks
-                                tasks = listOf(
-                                    PlanWeekDayTaskDomain(id = 1, title = "Задача 1", description = "Основной план", time = LocalTime.NOON),
-                                    PlanWeekDayTaskDomain(id = 2, title = "Задача 2", description = "Запасной варианfffdsfsfsdfdsfsdfdsтdsadsadsadsadad", time = LocalTime.NOON),
-                                    PlanWeekDayTaskDomain(id = 3, title = "Задача 3", description = "")),
-                                onTaskEdit = {},
-                                onTaskDelete = {},
-                            )
-                        }
-
-                        WeekDialogDayEditContentFooter( //footer
-                            onSave = {},
-                            onDelete = {},
-                        )
-                    }
-                }
-            }
+fun WeekDialogDayEditContentPreview(
+    day: PlanWeekDayDomain = PlanWeekDayDomain(
+        id = 1,
+        num = 0,
+        title = "План на понедельник"
+    ),
+    tasks: List<PlanWeekDayTaskDomain> = listOf(
+        PlanWeekDayTaskDomain(id = 1, title = "Задача 1", description = "Основной план", time = LocalTime.NOON),
+        PlanWeekDayTaskDomain(id = 2, title = "Задача 2", description = "Запасной вариант", time = LocalTime.NOON),
+        PlanWeekDayTaskDomain(id = 3, title = "Задача 3", description = "")
+    ),
+    loading: PlanWeekLoading = PlanWeekLoading.Idle
+) {
+    PreviewContainer{
+        WeekDialogCard{
+            WeekDialogDayEditContent(
+                dialogState = PlanWeekDialogDayDataHolder(day = day, tasks = tasks),
+                loading = loading,
+                onDismissClick = {},
+                onTitleChange = {},
+                onTaskEdit = {},
+                onTaskDelete = {},
+                onSave = {},
+                onDelete = {},
+            )
         }
     }
 }

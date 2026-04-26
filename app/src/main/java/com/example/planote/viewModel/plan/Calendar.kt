@@ -21,6 +21,7 @@ import com.example.planote.model.plan.repository.source.local.room.entity.PlanCa
 import com.example.planote.model.plan.repository.source.local.room.entity.PlanCalendarYearTaskEntity
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -90,6 +91,9 @@ interface PlanDataCalendarImplements {
 
 /* Dialog methods */
 interface PlanDialogCalendarImplements {
+    /* CALENDARBLOCK */
+    suspend fun observeEntityTasks(entity: PlanCalendarEntityDomain, type: PlanCalendarType): List<PlanCalendarTaskDomain> //Observe tasks for a day
+
     /* VIEW */
     fun loadEntityAndTasks(entity: PlanCalendarEntityDomain, type: PlanCalendarType) //Get cur entity and tasks from DB to local memory
 
@@ -214,6 +218,14 @@ class PlanCalendarViewModel @Inject constructor(
     /*************************************************************
      * Public functions @PlanDialogCalendarImplements
      *************************************************************/
+    override suspend fun observeEntityTasks(entity: PlanCalendarEntityDomain, type: PlanCalendarType): List<PlanCalendarTaskDomain> {
+        return when (type) {
+            PlanCalendarType.DAYS -> { daysRepository.getTasksForDay(entity.id).first().map { it.toDomain() } }
+            PlanCalendarType.MONTHS -> { monthsRepository.getTasksForMonth(entity.id).first().map { it.toDomain() } }
+            PlanCalendarType.YEARS -> { yearsRepository.getTasksForYear(entity.id).first().map { it.toDomain() } }
+        }
+    }
+
     /* VIEW */
     override fun loadEntityAndTasks(entity: PlanCalendarEntityDomain, type: PlanCalendarType) {
         newId = 0

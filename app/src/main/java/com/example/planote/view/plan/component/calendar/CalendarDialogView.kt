@@ -16,7 +16,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,7 +27,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -41,8 +39,6 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
@@ -67,6 +63,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.planote.DarkColorScheme
 import com.example.planote.MyAppFont
+import com.example.planote.PreviewContainer
+import com.example.planote.viewModel.plan.PlanCalendarDialogDataHolder
 import com.example.planote.viewModel.plan.PlanCalendarDialogMode
 import com.example.planote.viewModel.plan.PlanCalendarEntityDomain
 import com.example.planote.viewModel.plan.PlanCalendarLoading
@@ -74,6 +72,7 @@ import com.example.planote.viewModel.plan.PlanCalendarTaskDomain
 import com.example.planote.viewModel.plan.PlanCalendarType
 import com.example.planote.viewModel.plan.PlanCalendarViewModel
 import me.trishiraj.shadowglow.shadowGlow
+import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
 
@@ -86,6 +85,38 @@ import java.util.Locale
 /*****************************************************************
  * Private functions
  ****************************************************************/
+@Composable
+private fun CalendarDialogViewContent(
+    dialogState: PlanCalendarDialogDataHolder,
+    type: PlanCalendarType,
+    loading: PlanCalendarLoading,
+    onDismissClick: () -> Unit,
+    onEdit: () -> Unit
+) {
+    CalendarLoading(loading) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(15.dp),
+            modifier = Modifier.fillMaxSize().padding(25.dp),
+        ) {
+            CalendarDialogViewContentHeader(
+                entity = dialogState.entity,
+                type = type,
+                onDismissClick = onDismissClick,
+            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(15.dp),
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+            ) {
+                CalendarDialogViewContentDescription(entity = dialogState.entity)
+                CalendarDialogViewContentTasks(tasks = dialogState.tasks)
+            }
+            CalendarDialogViewContentFooter(
+                onEdit = onEdit,
+            )
+        }
+    }
+}
+
 @Composable
 private fun CalendarDialogViewContentHeader(
     entity: PlanCalendarEntityDomain,
@@ -344,34 +375,16 @@ fun CalendarDialogViewContent(
     viewModel: PlanCalendarViewModel = hiltViewModel(),
     dialogStateChange: (PlanCalendarDialogMode) -> Unit
 ) {
-    val calendarDialogState by viewModel.dialogState.collectAsStateWithLifecycle()
-    val calendarDataState by viewModel.dataState.collectAsStateWithLifecycle()
-    CalendarLoading(calendarDialogState.loading) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(15.dp),
-            modifier = Modifier.fillMaxSize().padding(25.dp),
-        ) {
-            CalendarDialogViewContentHeader(
-                entity = calendarDialogState.entity,
-                type = calendarDataState.type,
-                onDismissClick = {
-                    dialogStateChange(PlanCalendarDialogMode.IDLE)
-                }
-            )
+    val dialogState by viewModel.dialogState.collectAsStateWithLifecycle()
+    val dataType by viewModel.dataState.collectAsStateWithLifecycle()
 
-            Column(
-                verticalArrangement = Arrangement.spacedBy(15.dp),
-                modifier = Modifier.weight(1f).fillMaxWidth()
-            ) {
-                CalendarDialogViewContentDescription(entity = calendarDialogState.entity)
-                CalendarDialogViewContentTasks(tasks = calendarDialogState.tasks)
-            }
-
-            CalendarDialogViewContentFooter(
-                onEdit = { dialogStateChange(PlanCalendarDialogMode.EDIT) }
-            )
-        }
-    }
+    CalendarDialogViewContent(
+        dialogState = dialogState,
+        type = dataType.type,
+        loading = dialogState.loading,
+        onDismissClick = { dialogStateChange(PlanCalendarDialogMode.IDLE) },
+        onEdit = { dialogStateChange(PlanCalendarDialogMode.EDIT) },
+    )
 }
 
 /*****************************************************************
@@ -379,51 +392,29 @@ fun CalendarDialogViewContent(
  ****************************************************************/
 @Preview(showBackground = true, backgroundColor = 0xFF121212)
 @Composable
-fun CalendarDialogViewContentPreview() {
-    MaterialTheme(
-        colorScheme = DarkColorScheme,
-        typography = MyAppFont,
-    ) {
-        Box(modifier = Modifier.fillMaxSize().padding(35.dp)){
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                modifier = Modifier
-                    .width(340.dp)
-                    .height(650.dp)
-                    .border(
-                        width = 1.dp,
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.17f)
-                    )
-            ) {
-                CalendarLoading(PlanCalendarLoading.Idle) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(15.dp),
-                        modifier = Modifier.fillMaxSize().padding(25.dp),
-                    ) {
-                        CalendarDialogViewContentHeader(
-                            entity = PlanCalendarEntityDomain(),
-                            type = PlanCalendarType.DAYS,
-                            onDismissClick = { }
-                        )
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(15.dp),
-                            modifier = Modifier.weight(1f).fillMaxWidth()
-                        ) {
-                            CalendarDialogViewContentDescription(entity = PlanCalendarEntityDomain(title = "Пример описания тут написан"))
-                            CalendarDialogViewContentTasks(tasks = listOf(
-                                PlanCalendarTaskDomain(id = 1, title = "Задача 1", description = "Основной план", isDone = true),
-                                PlanCalendarTaskDomain(id = 2, title = "Задача 2", description = "Запасной варианfffdsfsfsdfdsfsdfdsтdsadsadsadsadad", isDone = false),
-                                PlanCalendarTaskDomain(id = 3, title = "Задача 3", description = "", isDone = false)))
-                        }
-                        CalendarDialogViewContentFooter(
-                            onEdit = { }
-                        )
-                    }
-                }
-            }
+fun CalendarDialogViewContentPreview(
+    entity: PlanCalendarEntityDomain = PlanCalendarEntityDomain(
+        id = 1,
+        title = "План на день",
+        date = LocalDate.now()
+    ),
+    tasks: List<PlanCalendarTaskDomain> = listOf(
+        PlanCalendarTaskDomain(id = 1, title = "Задача 1", description = "Основной план", isDone = true),
+        PlanCalendarTaskDomain(id = 2, title = "Задача 2", description = "Запасной вариант", isDone = false),
+        PlanCalendarTaskDomain(id = 3, title = "Задача 3", description = "", isDone = false)
+    ),
+    type: PlanCalendarType = PlanCalendarType.DAYS,
+    loading: PlanCalendarLoading = PlanCalendarLoading.Idle
+) {
+    PreviewContainer {
+        CalendarDialogCard {
+            CalendarDialogViewContent(
+                dialogState = PlanCalendarDialogDataHolder(entity = entity, tasks = tasks),
+                type = type,
+                loading = loading,
+                onDismissClick = {},
+                onEdit = {},
+            )
         }
     }
 }
