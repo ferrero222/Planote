@@ -67,6 +67,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -303,9 +304,9 @@ private fun CalendarTypeSelector(
 
 @Composable
 private fun CalendarCellBoxPortrait(
+    modifier: Modifier = Modifier,
     label: String,
     ratio: Float = 1.3f,
-    modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     showDot: Boolean = false,
     dotColor: Color = MaterialTheme.colorScheme.primary,
@@ -354,20 +355,27 @@ private fun CalendarCellBoxPortrait(
 
 @Composable
 private fun CalendarCellBoxLandScape(
+    modifier: Modifier = Modifier,
     label: String,
     entity: PlanCalendarEntityDomain,
     type: PlanCalendarType,
     onEntityTasks: suspend (PlanCalendarEntityDomain, PlanCalendarType) -> List<PlanCalendarTaskDomain>,
     ratio: Float = 1.3f,
-    modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     boxHeight: TextUnit = 20.sp,
     boxLenght: Float = 1f,
     isOutEntity: Boolean = false,
     isCurEntity: Boolean = false,
 ) {
-    var loadingState by remember(entity.id, entity.date) { mutableStateOf<PlanCalendarLoading>(PlanCalendarLoading.Loading) }
-    var tasks by remember(entity.id, entity.date) { mutableStateOf<List<PlanCalendarTaskDomain>>(emptyList()) }
+    var loadingState by remember(entity.id, entity.date) { mutableStateOf<PlanCalendarLoading>(PlanCalendarLoading.Idle) }
+    var tasks by remember(entity.id, entity.date) { mutableStateOf<List<PlanCalendarTaskDomain>>(                      listOf(
+        PlanCalendarTaskDomain(id = 1, ownerId = entity.id, title = "Задача dasdasdsadsadas1"),
+        PlanCalendarTaskDomain(id = 2, ownerId = entity.id, title = "Задача 2"),
+        PlanCalendarTaskDomain(id = 3, ownerId = entity.id, title = "Задача 3"),
+        PlanCalendarTaskDomain(id = 4, ownerId = entity.id, title = "Задача 4"),
+        PlanCalendarTaskDomain(id = 5, ownerId = entity.id, title = "Задача 5"),
+        PlanCalendarTaskDomain(id = 6, ownerId = entity.id, title = "Задача 6")
+    )) }
 
     LaunchedEffect(entity.id, entity.date) {
         if (isOutEntity || entity.id == 0L) {
@@ -383,6 +391,7 @@ private fun CalendarCellBoxLandScape(
     Box(
         modifier = modifier
             .aspectRatio(ratio)
+            .padding(bottom = 5.dp)
             .let { if (onClick != null) it.clickable { onClick() } else it }
     ) {
         Column {
@@ -419,23 +428,20 @@ private fun CalendarCellBoxLandScape(
                         .fillMaxWidth()
                         .padding(horizontal = 6.dp, vertical = 4.dp)
                 ) {
-                    if (isOutEntity) {
-                        Text(
-                            text = "",
-                            fontSize = 11.sp
-                        )
-                    } else if (tasks.isEmpty()) {
+                    if (!isOutEntity && tasks.isEmpty()) {
                         Text(
                             text = "Нет задач",
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                         )
-                    } else {
-                        tasks.forEach { task ->
+                    } else if(!isOutEntity) {
+                        tasks.forEachIndexed { index, task ->
                             Text(
-                                text = task.title ?: "Без названия",
+                                text = if(index >= 3) "..." else  task.title ?: "Без названия",
                                 fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                             )
                         }
                     }
@@ -856,7 +862,20 @@ fun CalendarBlockPreview(
                 onDayClick = { _, _ -> },
                 onMonthClick = { _, _ -> },
                 onYearClick = { _, _ -> },
-                onEntityTasks = { _, _ -> }
+                onEntityTasks = { entity, type ->
+                    if (type == PlanCalendarType.DAYS && entity.id == 3L) {
+                        listOf(
+                            PlanCalendarTaskDomain(id = 1, ownerId = entity.id, title = "Задача 1"),
+                            PlanCalendarTaskDomain(id = 2, ownerId = entity.id, title = "Задача 2"),
+                            PlanCalendarTaskDomain(id = 3, ownerId = entity.id, title = "Задача 3"),
+                            PlanCalendarTaskDomain(id = 4, ownerId = entity.id, title = "Задача 4"),
+                            PlanCalendarTaskDomain(id = 5, ownerId = entity.id, title = "Задача 5"),
+                            PlanCalendarTaskDomain(id = 6, ownerId = entity.id, title = "Задача 6")
+                        )
+                    } else {
+                        emptyList()
+                    }
+                }
             )
         }
     }
