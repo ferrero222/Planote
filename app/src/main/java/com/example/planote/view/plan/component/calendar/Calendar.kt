@@ -8,7 +8,6 @@ package com.example.planote.view.plan.component.calendar
 /*****************************************************************
  * Imported packages
  ****************************************************************/
-import android.content.res.Configuration
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.tween
@@ -30,7 +29,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -56,9 +54,12 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,7 +67,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -75,7 +75,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.sqlite.db.SupportSQLiteOpenHelper
 import com.example.planote.DarkColorScheme
 import com.example.planote.MyAppFont
 import com.example.planote.PreviewContainer
@@ -85,6 +84,7 @@ import com.example.planote.viewModel.plan.PlanCalendarDataHolder
 import com.example.planote.viewModel.plan.PlanCalendarDialogMode
 import com.example.planote.viewModel.plan.PlanCalendarEntityDomain
 import com.example.planote.viewModel.plan.PlanCalendarLoading
+import com.example.planote.viewModel.plan.PlanCalendarTaskDomain
 import com.example.planote.viewModel.plan.PlanCalendarType
 import com.example.planote.viewModel.plan.PlanCalendarViewModel
 import com.kizitonwose.calendar.compose.HorizontalCalendar
@@ -94,7 +94,6 @@ import com.kizitonwose.calendar.core.OutDateStyle
 import com.kizitonwose.calendar.core.atStartOfMonth
 import com.kizitonwose.calendar.core.daysOfWeek
 import kotlinx.coroutines.launch
-import kotlinx.datetime.format.Padding
 import me.trishiraj.shadowglow.shadowGlow
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -121,6 +120,7 @@ private fun CalendarBlock(
     onDayClick: (PlanCalendarEntityDomain, PlanCalendarType) -> Unit,
     onMonthClick: (PlanCalendarEntityDomain, PlanCalendarType) -> Unit,
     onYearClick: (PlanCalendarEntityDomain, PlanCalendarType) -> Unit,
+    onEntityTasks: suspend (PlanCalendarEntityDomain, PlanCalendarType) -> List<PlanCalendarTaskDomain>,
 ) {
     PlannerBlockCard {
         Column(
@@ -134,7 +134,8 @@ private fun CalendarBlock(
                 dataState = dataState,
                 onDayClick = onDayClick,
                 onMonthClick = onMonthClick,
-                onYearClick = onYearClick
+                onYearClick = onYearClick,
+                onEntityTasks = onEntityTasks
             )
         }
     }
@@ -231,7 +232,8 @@ private fun CalendarBlockContent(
     dataState: PlanCalendarDataHolder,
     onDayClick: (PlanCalendarEntityDomain, PlanCalendarType) -> Unit,
     onMonthClick: (PlanCalendarEntityDomain, PlanCalendarType) -> Unit,
-    onYearClick: (PlanCalendarEntityDomain, PlanCalendarType) -> Unit
+    onYearClick: (PlanCalendarEntityDomain, PlanCalendarType) -> Unit,
+    onEntityTasks: suspend (PlanCalendarEntityDomain, PlanCalendarType) -> List<PlanCalendarTaskDomain>
 ) {
     Box(
         modifier = Modifier
@@ -248,7 +250,7 @@ private fun CalendarBlockContent(
                 else (slideInHorizontally { -it } + fadeIn()).togetherWith(slideOutHorizontally { it } + fadeOut())
             }
         ) { targetViewType -> when (targetViewType) {
-                PlanCalendarType.DAYS   -> DaysCalendar(dataState, onDayClick)
+                PlanCalendarType.DAYS   -> DaysCalendar(dataState, onDayClick, onEntityTasks)
                 PlanCalendarType.MONTHS -> MonthsCalendar(dataState, onMonthClick)
                 PlanCalendarType.YEARS  -> YearsCalendar(dataState, onYearClick)
             }
@@ -302,6 +304,7 @@ private fun CalendarTypeSelector(
 @Composable
 private fun CalendarCellBoxPortrait(
     label: String,
+    ratio: Float = 1.3f,
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     showDot: Boolean = false,
@@ -316,7 +319,7 @@ private fun CalendarCellBoxPortrait(
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-          .aspectRatio(1.3f)
+          .aspectRatio(ratio)
           .let { if (onClick != null) it.clickable { onClick() } else it }
     ) {
       Text(
@@ -350,9 +353,103 @@ private fun CalendarCellBoxPortrait(
 }
 
 @Composable
+private fun CalendarCellBoxLandScape(
+    label: String,
+    entity: PlanCalendarEntityDomain,
+    type: PlanCalendarType,
+    onEntityTasks: suspend (PlanCalendarEntityDomain, PlanCalendarType) -> List<PlanCalendarTaskDomain>,
+    ratio: Float = 1.3f,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    boxHeight: TextUnit = 20.sp,
+    boxLenght: Float = 1f,
+    isOutEntity: Boolean = false,
+    isCurEntity: Boolean = false,
+) {
+    var loadingState by remember(entity.id, entity.date) { mutableStateOf<PlanCalendarLoading>(PlanCalendarLoading.Loading) }
+    var tasks by remember(entity.id, entity.date) { mutableStateOf<List<PlanCalendarTaskDomain>>(emptyList()) }
+
+    LaunchedEffect(entity.id, entity.date) {
+        if (isOutEntity || entity.id == 0L) {
+            tasks = emptyList()
+            loadingState = PlanCalendarLoading.Idle
+        } else {
+            loadingState = PlanCalendarLoading.Loading
+            tasks = onEntityTasks(entity, type)
+            loadingState = PlanCalendarLoading.Idle
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .aspectRatio(ratio)
+            .let { if (onClick != null) it.clickable { onClick() } else it }
+    ) {
+        Column {
+            Text(
+                textAlign = TextAlign.Center,
+                text = label,
+                color = if (!isOutEntity) {
+                    if(isCurEntity) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                },
+                fontSize = 15.sp,
+                lineHeight = boxHeight,
+                fontWeight = if (isCurEntity && !isOutEntity) FontWeight.Bold else FontWeight.Normal,
+                modifier = modifier
+                    .fillMaxWidth(boxLenght)
+                    .background(
+                        color = if(isCurEntity) MaterialTheme.colorScheme.primary else Color.Transparent
+                    )
+            )
+            HorizontalDivider(
+                thickness = 3.dp,
+                color = if (!isOutEntity) {
+                    if(isCurEntity) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                } else {
+                    Color.Transparent
+                },
+                modifier = Modifier.padding(horizontal = if(!isCurEntity) 5.dp else 0.dp)
+            )
+            CalendarLoading(loadingState) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 6.dp, vertical = 4.dp)
+                ) {
+                    if (isOutEntity) {
+                        Text(
+                            text = "",
+                            fontSize = 11.sp
+                        )
+                    } else if (tasks.isEmpty()) {
+                        Text(
+                            text = "Нет задач",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                        )
+                    } else {
+                        tasks.forEach { task ->
+                            Text(
+                                text = task.title ?: "Без названия",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun DaysCalendar(
     dataState: PlanCalendarDataHolder,
-    onDayClick: (PlanCalendarEntityDomain, PlanCalendarType) -> Unit
+    onDayClick: (PlanCalendarEntityDomain, PlanCalendarType) -> Unit,
+    onEntityTasks: suspend (PlanCalendarEntityDomain, PlanCalendarType) -> List<PlanCalendarTaskDomain>
 ) {
     val currentDate = LocalDate.now()
     val nowMonth = YearMonth.now()
@@ -374,6 +471,7 @@ private fun DaysCalendar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 15.dp)
+                    .padding(bottom = if(isLandscape()) 15.dp else 0.dp)
             ) {
                 daysOfWeek.forEach { dayOfWeek ->
                     Text(
@@ -392,14 +490,26 @@ private fun DaysCalendar(
             val curLocalDate = day.date
             val curEntityIsNew = dataState.days.find{ it.date == curLocalDate }
             val curEntity = curEntityIsNew ?: PlanCalendarEntityDomain(date = curLocalDate)
-            CalendarCellBoxPortrait(
-                label = day.date.dayOfMonth.toString(),
-                onClick = { if(day.position == DayPosition.MonthDate) { onDayClick(curEntity, PlanCalendarType.DAYS) } },
-                showDot = (curEntity.id.toInt() != 0 && day.position == DayPosition.MonthDate && !isCurrentDay),
-                dotColor = if(curLocalDate.isBefore(currentDate)) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primary,
-                isCurEntity = isCurrentDay,
-                isOutEntity = (day.position != DayPosition.MonthDate)
-            )
+            if(isLandscape()){
+                CalendarCellBoxLandScape(
+                    label = day.date.dayOfMonth.toString(),
+                    entity = curEntity,
+                    type = PlanCalendarType.DAYS,
+                    onEntityTasks = onEntityTasks,
+                    onClick = { if(day.position == DayPosition.MonthDate) { onDayClick(curEntity, PlanCalendarType.DAYS) } },
+                    isCurEntity = isCurrentDay,
+                    isOutEntity = (day.position != DayPosition.MonthDate)
+                )
+            } else {
+                CalendarCellBoxPortrait(
+                    label = day.date.dayOfMonth.toString(),
+                    onClick = { if(day.position == DayPosition.MonthDate) { onDayClick(curEntity, PlanCalendarType.DAYS) } },
+                    showDot = (curEntity.id.toInt() != 0 && day.position == DayPosition.MonthDate && !isCurrentDay),
+                    dotColor = if(curLocalDate.isBefore(currentDate)) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primary,
+                    isCurEntity = isCurrentDay,
+                    isOutEntity = (day.position != DayPosition.MonthDate)
+                )
+            }
         },
 
         monthFooter = { month ->
@@ -467,11 +577,12 @@ private fun MonthsCalendar(
                                else MaterialTheme.colorScheme.primary
                 CalendarCellBoxPortrait(
                     label = month.getDisplayName(TextStyle.FULL, Locale.getDefault()).replaceFirstChar { it.uppercaseChar() },
+                    ratio = 2f,
                     onClick = { onMonthClick(curEntity, PlanCalendarType.MONTHS) },
                     showDot = (curEntity.id.toInt() != 0 && month != currentMonth),
                     dotColor = dotColor,
                     dotSize = 7.dp,
-                    dotPadding = 15.dp,
+                    dotPadding = 5.dp,
                     boxHeight = 35.sp,
                     boxLenght = 0.85f,
                     isCurEntity = month == currentMonth
@@ -523,38 +634,20 @@ private fun YearsCalendar(
                 val curLocalDate = LocalDate.of(year, 1, 1)
                 val curEntityIsNew = dataState.years.find{ it.date == curLocalDate }
                 val curEntity = curEntityIsNew ?: PlanCalendarEntityDomain(date = curLocalDate)
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .aspectRatio(2f)
-                        .clip(RectangleShape)
-                        .background(
-                            color = if (year == currentYear) MaterialTheme.colorScheme.primary else Color.Transparent,
-                            shape = RectangleShape
-                        )
-                        .clickable {
-                            onYearClick(curEntity, PlanCalendarType.YEARS)
-                        }
-                ) {
-                    Text(
-                        text = year.toString(),
-                        color = if (year == currentYear) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onSurface,
-                        fontSize = 14.sp,
-                        textAlign = TextAlign.Center
-                    )
-                    if (curEntity.id.toInt() != 0 && year != currentYear) {
-                        val dotColor =
-                            if (LocalDate.of(year, 1, 1).isBefore(LocalDate.of(currentYear, 1, 1))) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
-                            else MaterialTheme.colorScheme.primary
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .size(7.dp)
-                                .clip(RectangleShape)
-                                .background(dotColor)
-                        )
-                    }
-                }
+                val dotColor = if (LocalDate.of(year, 1, 1).isBefore(LocalDate.of(currentYear, 1, 1))) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                               else MaterialTheme.colorScheme.primary
+                CalendarCellBoxPortrait(
+                    label = year.toString(),
+                    ratio = 2f,
+                    onClick = { onYearClick(curEntity, PlanCalendarType.YEARS) },
+                    showDot = (curEntity.id.toInt() != 0 && year != currentYear),
+                    dotColor = dotColor,
+                    dotSize = 7.dp,
+                    dotPadding = 0.dp,
+                    boxHeight = 30.sp,
+                    boxLenght = 0.85f,
+                    isCurEntity = year == currentYear
+                )
             }
         }
         Box(
@@ -608,6 +701,7 @@ fun CalendarBlock(
             viewModel.loadEntityAndTasks(entity, type)
             dialogStateChange(if (entity.id == 0L) PlanCalendarDialogMode.EDIT else PlanCalendarDialogMode.VIEW)
         },
+        onEntityTasks = { entity, type -> viewModel.observeEntityTasks(entity, type) }
     )
 }
 
@@ -751,7 +845,7 @@ fun CalendarBlockPreview(
             PlanCalendarEntityDomain(id = 1, title = "Год", date = LocalDate.of(LocalDate.now().year -2, 1, 1)),
             PlanCalendarEntityDomain(id = 1, title = "Год", date = LocalDate.of(LocalDate.now().year +5, 1, 1))
         ),
-        type = PlanCalendarType.MONTHS
+        type = PlanCalendarType.DAYS
     )
 ) {
     MaterialTheme(colorScheme = DarkColorScheme, typography = MyAppFont) {
@@ -762,6 +856,7 @@ fun CalendarBlockPreview(
                 onDayClick = { _, _ -> },
                 onMonthClick = { _, _ -> },
                 onYearClick = { _, _ -> },
+                onEntityTasks = { _, _ -> }
             )
         }
     }
