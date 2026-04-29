@@ -26,13 +26,12 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -54,8 +53,6 @@ import com.example.planote.view.note.NotesPage
 import com.example.planote.view.plan.PlannerPage
 import com.example.planote.view.server.ServerPage
 import com.example.planote.view.settings.SettingsPage
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.debounce
 import kotlin.math.abs
 
 /*****************************************************************
@@ -78,17 +75,11 @@ sealed class Screen(
 /*****************************************************************
  * Public functions
  ****************************************************************/
-@OptIn(FlowPreview::class)
 @Composable
 fun MainScreen() {
     var selectedScreenIndex by remember { mutableIntStateOf(0) }
     var showBottomBar by remember { mutableStateOf(true) }
-    var pendingShowBottomBar by remember { mutableStateOf(true) }
-    LaunchedEffect(pendingShowBottomBar) {
-        snapshotFlow { pendingShowBottomBar }
-            .debounce(300)
-            .collect { showBottomBar = it }
-    }
+    var scrollAccumulator by remember { mutableFloatStateOf(0f) }
     val nestedScrollConnection = remember {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
@@ -96,7 +87,17 @@ fun MainScreen() {
                 val dx = available.x
                 if (abs(dy) < 3f) return Offset.Zero
                 if (abs(dy) <= abs(dx)) return Offset.Zero
-                showBottomBar = if (dy > 0) true else if (dy < 0) false else true
+
+                val hideThreshold = 100f
+                val showThreshold = 1000f
+                scrollAccumulator += dy
+                if (scrollAccumulator >= showThreshold) {
+                    showBottomBar = true
+                    scrollAccumulator = 0f
+                } else if (scrollAccumulator <= -hideThreshold) {
+                    showBottomBar = false
+                    scrollAccumulator = 0f
+                }
                 return Offset.Zero
             }
         }
@@ -126,7 +127,7 @@ fun MainScreen() {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 20.dp)
+                .padding(0.dp)
                 .then(Modifier.nestedScroll(nestedScrollConnection))
         ) {
             val plannerAlpha  by animateFloatAsState(targetValue = if (selectedScreenIndex == 0) 1f else 0f, animationSpec = tween(durationMillis = 300), label = "PlannerAlpha")

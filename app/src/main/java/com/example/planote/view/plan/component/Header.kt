@@ -38,7 +38,7 @@ import me.trishiraj.shadowglow.shadowGlow
 @Composable
 fun HeaderBlock() {
     Box(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().padding(top = 20.dp)
     ) {
         Icon(
             imageVector = Icons.Filled.Dashboard,

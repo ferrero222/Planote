@@ -26,7 +26,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -92,7 +95,7 @@ interface PlanDataCalendarImplements {
 /* Dialog methods */
 interface PlanDialogCalendarImplements {
     /* CALENDARBLOCK */
-    suspend fun observeEntityTasks(entity: PlanCalendarEntityDomain, type: PlanCalendarType): List<PlanCalendarTaskDomain> //Observe tasks for a day
+    fun observeEntityTasks(entity: PlanCalendarEntityDomain, type: PlanCalendarType): Flow<List<PlanCalendarTaskDomain>> //Observe tasks for a day
 
     /* VIEW */
     fun loadEntityAndTasks(entity: PlanCalendarEntityDomain, type: PlanCalendarType) //Get cur entity and tasks from DB to local memory
@@ -218,13 +221,13 @@ class PlanCalendarViewModel @Inject constructor(
     /*************************************************************
      * Public functions @PlanDialogCalendarImplements
      *************************************************************/
-    override suspend fun observeEntityTasks(entity: PlanCalendarEntityDomain, type: PlanCalendarType): List<PlanCalendarTaskDomain> {
-        return when (type) {
-            PlanCalendarType.DAYS -> { daysRepository.getTasksForDay(entity.id).first().map { it.toDomain() } }
-            PlanCalendarType.MONTHS -> { monthsRepository.getTasksForMonth(entity.id).first().map { it.toDomain() } }
-            PlanCalendarType.YEARS -> { yearsRepository.getTasksForYear(entity.id).first().map { it.toDomain() } }
-        }
-    }
+    override fun observeEntityTasks(entity: PlanCalendarEntityDomain, type: PlanCalendarType): Flow<List<PlanCalendarTaskDomain>> =
+        if (entity.id == 0L) flowOf(emptyList())
+        else when (type) {
+            PlanCalendarType.DAYS -> daysRepository.getTasksForDay(entity.id).map { it.map { e -> e.toDomain() } }
+            PlanCalendarType.MONTHS -> monthsRepository.getTasksForMonth(entity.id).map { it.map { e -> e.toDomain() } }
+            PlanCalendarType.YEARS -> yearsRepository.getTasksForYear(entity.id).map { it.map { e -> e.toDomain() } }
+        }.distinctUntilChanged()
 
     /* VIEW */
     override fun loadEntityAndTasks(entity: PlanCalendarEntityDomain, type: PlanCalendarType) {
