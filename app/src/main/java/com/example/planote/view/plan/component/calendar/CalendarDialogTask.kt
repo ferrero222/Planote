@@ -8,7 +8,6 @@ package com.example.planote.view.plan.component.calendar
 /*****************************************************************
  * Imported packages
  ****************************************************************/
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,15 +37,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.planote.DarkColorScheme
-import com.example.planote.MyAppFont
 import com.example.planote.PreviewContainer
+import com.example.planote.isLandscape
 import com.example.planote.viewModel.plan.PlanCalendarDialogDataHolder
 import com.example.planote.viewModel.plan.PlanCalendarDialogMode
 import com.example.planote.viewModel.plan.PlanCalendarEntityDomain
@@ -88,7 +87,7 @@ private fun CalendarDialogTaskContent(
     CalendarLoading(loading) {
         Column(
             verticalArrangement = Arrangement.spacedBy(15.dp),
-            modifier = Modifier.fillMaxSize().padding(25.dp),
+            modifier = Modifier.fillMaxSize().padding(if(!isLandscape()) 17.dp else 10.dp),
         ) {
             CalendarDialogTaskContentHeader(
                 entity = dialogState.entity,
@@ -121,48 +120,47 @@ private fun CalendarDialogTaskContentHeader(
     entity: PlanCalendarEntityDomain,
     type: PlanCalendarType, onDismissClick: () -> Unit
 ) {
-    Box(
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth(),
-        contentAlignment = Alignment.Center
-    ) {
-        IconButton(
-            onClick = { onDismissClick() },
-            modifier = Modifier.align(Alignment.CenterStart).size(18.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Filled.ArrowBackIosNew,
-                contentDescription = "Назад",
-                tint = MaterialTheme.colorScheme.onSurface,
-            )
-        }
-        val month = entity.date.month.getDisplayName(TextStyle.FULL, Locale.getDefault()).replaceFirstChar { it.uppercaseChar() }
-        val textHeader = when (type) {
-            PlanCalendarType.DAYS -> "$month ${entity.date.dayOfMonth}"
-            PlanCalendarType.MONTHS -> "$month ${entity.date.year}"
-            PlanCalendarType.YEARS -> "${entity.date.year} year"
-        }
-        Text(
-            text = textHeader,
-            fontSize = 19.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.align(Alignment.Center)
-        )
+    ){
         Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .background(
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(10.dp)
-                )
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
         ) {
+            IconButton(
+                onClick = { onDismissClick() },
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .size(24.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.ArrowBackIosNew,
+                    contentDescription = "Назад",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(17.dp).padding(bottom = 4.dp)
+                )
+            }
+            val month = entity.date.month.getDisplayName(TextStyle.FULL, Locale.getDefault()).replaceFirstChar { it.uppercaseChar() }
+            val textHeader = when (type) {
+                PlanCalendarType.DAYS -> "$month ${entity.date.dayOfMonth}"
+                PlanCalendarType.MONTHS -> "$month ${entity.date.year}"
+                PlanCalendarType.YEARS -> "${entity.date.year} year"
+            }
             Text(
-                text = "EDIT",
-                fontSize = 11.sp,
+                text = textHeader,
+                fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = 10.dp)
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                modifier = Modifier.align(Alignment.Center)
+            )
+            Text(
+                text = "// EDIT",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                modifier = Modifier.align(Alignment.CenterEnd)
             )
         }
     }
@@ -173,9 +171,12 @@ private fun CalendarDialogTaskContentTitle(
     task: PlanCalendarTaskDomain,
     onTitleChange: (String) -> Unit
 ){
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Text(
-            text = "ЗАГОЛОВОК",
+            text = ">> ЗАГОЛОВОК",
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
@@ -186,7 +187,7 @@ private fun CalendarDialogTaskContentTitle(
             placeholder = { Text(text = "Введите заголовок", color = MaterialTheme.colorScheme.onSurface) },
             onValueChange = onTitleChange,
             textStyle = androidx.compose.ui.text.TextStyle(fontSize = 15.sp),
-            shape = RoundedCornerShape(5.dp),
+            shape = RectangleShape,
             maxLines = 5,
             modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
@@ -214,9 +215,12 @@ private fun CalendarDialogTaskContentDescription(
     task: PlanCalendarTaskDomain,
     onDescChange: (String) -> Unit
 ){
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Text(
-            text = "ОПИСАНИЕ",
+            text = ">> ОПИСАНИЕ",
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
@@ -259,7 +263,7 @@ private fun CalendarDialogTaskContentFooter(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         TextButton(
-            shape = RoundedCornerShape(10.dp),
+            shape = RectangleShape,
             onClick = { onCancel() },
             contentPadding = PaddingValues(vertical = 15.dp),
             modifier = Modifier.fillMaxWidth()
@@ -271,7 +275,7 @@ private fun CalendarDialogTaskContentFooter(
             )
         }
         Button(
-            shape = RoundedCornerShape(10.dp),
+            shape = RectangleShape,
             colors = ButtonDefaults.buttonColors(
                 contentColor = MaterialTheme.colorScheme.background,
                 containerColor = MaterialTheme.colorScheme.primary

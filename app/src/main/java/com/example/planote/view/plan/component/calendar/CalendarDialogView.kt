@@ -8,6 +8,7 @@ package com.example.planote.view.plan.component.calendar
 /*****************************************************************
  * Imported packages
  ****************************************************************/
+import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
@@ -31,7 +32,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -54,6 +54,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -61,9 +62,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.planote.DarkColorScheme
-import com.example.planote.MyAppFont
 import com.example.planote.PreviewContainer
+import com.example.planote.isLandscape
 import com.example.planote.viewModel.plan.PlanCalendarDialogDataHolder
 import com.example.planote.viewModel.plan.PlanCalendarDialogMode
 import com.example.planote.viewModel.plan.PlanCalendarEntityDomain
@@ -96,7 +96,7 @@ private fun CalendarDialogViewContent(
     CalendarLoading(loading) {
         Column(
             verticalArrangement = Arrangement.spacedBy(15.dp),
-            modifier = Modifier.fillMaxSize().padding(25.dp),
+            modifier = Modifier.fillMaxSize().padding(if(!isLandscape()) 17.dp else 10.dp),
         ) {
             CalendarDialogViewContentHeader(
                 entity = dialogState.entity,
@@ -123,48 +123,47 @@ private fun CalendarDialogViewContentHeader(
     type: PlanCalendarType,
     onDismissClick: () -> Unit
 ) {
-    Box(
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth(),
-        contentAlignment = Alignment.Center
-    ) {
-        IconButton(
-            onClick = { onDismissClick() },
-            modifier = Modifier.align(Alignment.CenterStart).size(20.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Close,
-                contentDescription = "Закрыть",
-                tint = MaterialTheme.colorScheme.onSurface,
-            )
-        }
-        val month = entity.date.month.getDisplayName(TextStyle.FULL, Locale.getDefault()).replaceFirstChar { it.uppercaseChar() }
-        val textHeader = when (type) {
-            PlanCalendarType.DAYS -> "$month ${entity.date.dayOfMonth}"
-            PlanCalendarType.MONTHS -> "$month ${entity.date.year}"
-            PlanCalendarType.YEARS -> "${entity.date.year} year"
-        }
-        Text(
-            text = textHeader,
-            fontSize = 19.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.align(Alignment.Center)
-        )
+    ){
         Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .background(
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(10.dp)
-                )
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
         ) {
+            IconButton(
+                onClick = { onDismissClick() },
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .size(24.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = "Закрыть",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(22.dp).padding(bottom = 4.dp)
+                )
+            }
+            val month = entity.date.month.getDisplayName(TextStyle.FULL, Locale.getDefault()).uppercase()
+            val textHeader = when (type) {
+                PlanCalendarType.DAYS -> "$month ${entity.date.dayOfMonth}"
+                PlanCalendarType.MONTHS -> "$month ${entity.date.year}"
+                PlanCalendarType.YEARS -> "${entity.date.year}"
+            }
             Text(
-                text = "VIEW",
-                fontSize = 11.sp,
+                text = textHeader,
+                fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = 10.dp)
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                modifier = Modifier.align(Alignment.Center)
+            )
+            Text(
+                text = "// VIEW",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                modifier = Modifier.align(Alignment.CenterEnd)
             )
         }
     }
@@ -176,18 +175,23 @@ private fun CalendarDialogViewContentDescription(
 ){
     if(entity.title.isNullOrEmpty()) return
     Column(
+        verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Text(
-            text = "ОПИСАНИЕ",
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-        )
+        Box(
+            modifier = Modifier.fillMaxWidth()
+        ){
+            Text(
+                text = ">> ОПИСАНИЕ",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+            )
+        }
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f), shape = RoundedCornerShape(5.dp))
+                .background(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
         ){
             Text(
                 text = entity.title,
@@ -207,70 +211,68 @@ private fun CalendarDialogViewContentTasksItem(
 ){
     val hasDescription = !task.description.isNullOrBlank()
     var expandedTaskState by remember { mutableStateOf(false) }
-    
-    Column(
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .background(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f), shape = RoundedCornerShape(5.dp))
+            .clickable(enabled = hasDescription) { expandedTaskState = !expandedTaskState }
+            .background(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+            .padding(10.dp)
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        Text(
+            text = task.title ?: "Нет описания",
+            color = if (task.isDone) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface,
+            fontSize = 15.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+        if (hasDescription) {
+            Icon(
+                imageVector = if (expandedTaskState) Icons.Default.KeyboardArrowUp
+                else Icons.Default.KeyboardArrowDown,
+                contentDescription = if (expandedTaskState) "Свернуть" else "Развернуть",
+                tint = if(task.isDone) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        Box(
+            modifier = Modifier.size(20.dp)
+        ) {
+            Checkbox(
+                checked = task.isDone,
+                onCheckedChange = {},
+                colors = CheckboxDefaults.colors(
+                    checkedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    uncheckedColor = MaterialTheme.colorScheme.onSurface,
+                    checkmarkColor = MaterialTheme.colorScheme.surface
+                )
+            )
+        }
+    }
+    AnimatedVisibility(
+        visible = expandedTaskState && hasDescription,
+        enter = expandVertically(
+            expandFrom = Alignment.Top,
+            animationSpec = tween(durationMillis = 300)
+        ),
+        exit = shrinkVertically(
+            shrinkTowards = Alignment.Top,
+            animationSpec = tween(durationMillis = 300)
+        )
+    ) {
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(enabled = hasDescription) { expandedTaskState = !expandedTaskState }
-                .padding(10.dp)
-        ) {
-            Text(
-                text = task.title ?: "Нет описания",
-                color = if (task.isDone) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface,
-                fontSize = 15.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
-            )
-            if (hasDescription) {
-                Icon(
-                    imageVector = if (expandedTaskState) Icons.Default.KeyboardArrowUp
-                    else Icons.Default.KeyboardArrowDown,
-                    contentDescription = if (expandedTaskState) "Свернуть" else "Развернуть",
-                    tint = if(task.isDone) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            Box(
-                modifier = Modifier.size(20.dp)
-            ) {
-                Checkbox(
-                    checked = task.isDone,
-                    onCheckedChange = {},
-                    colors = CheckboxDefaults.colors(
-                        checkedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                        uncheckedColor = MaterialTheme.colorScheme.onSurface,
-                        checkmarkColor = MaterialTheme.colorScheme.surface
-                    )
-                )
-            }
-        }
-        AnimatedVisibility(
-            visible = expandedTaskState && hasDescription,
-            enter = expandVertically(
-                expandFrom = Alignment.Top,
-                animationSpec = tween(durationMillis = 300)
-            ),
-            exit = shrinkVertically(
-                shrinkTowards = Alignment.Top,
-                animationSpec = tween(durationMillis = 300)
-            )
-        ) {
+                .background(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+                .padding(start = 10.dp, end = 10.dp, bottom = 10.dp)
+        ){
             Text(
                 text = task.description ?: "Нет",
                 color = if (task.isDone) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 fontSize = 13.sp,
                 maxLines = 6,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 10.dp, end = 10.dp, bottom = 10.dp)
             )
         }
     }
@@ -282,17 +284,20 @@ private fun CalendarDialogViewContentTasks(
 ){
     if(tasks.isEmpty()) return
     val listState = rememberLazyListState()
-    Column {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Box(modifier = Modifier.fillMaxWidth()){
             Text(
-                text = "ЗАДАЧИ",
+                text = ">> ЗАДАЧИ",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                 modifier = Modifier.align(Alignment.CenterStart)
             )
             Text(
-                text = "${tasks.size} АКТИВНЫХ",
+                text = "// АКТИВНЫХ ${tasks.size}",
                 fontSize = 10.sp,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 modifier = Modifier.align(Alignment.CenterEnd)
@@ -301,7 +306,7 @@ private fun CalendarDialogViewContentTasks(
         Box {
             LazyColumn(
                 state = listState,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 items(tasks, key = { it.id }) { task ->
@@ -318,14 +323,14 @@ private fun CalendarDialogViewContentTasks(
                     visible = listState.canScrollForward,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(60.dp),
+                        .height(if(!isLandscape()) 50.dp else 15.dp),
                     enter = fadeIn(animationSpec = tween(150)),
                     exit = fadeOut(animationSpec = tween(150))
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(60.dp)
+                            .height(if(!isLandscape()) 50.dp else 15.dp)
                             .background(
                                 Brush.verticalGradient(
                                     colors = listOf(
@@ -346,24 +351,50 @@ private fun CalendarDialogViewContentTasks(
 private fun CalendarDialogViewContentFooter(
     onEdit: () -> Unit
 ){
-    Button(
-        shape = RoundedCornerShape(10.dp),
-        colors = ButtonDefaults.buttonColors(
-            contentColor = MaterialTheme.colorScheme.background,
-            containerColor = MaterialTheme.colorScheme.primary
-        ),
-        contentPadding = PaddingValues(vertical = 15.dp),
-        onClick = { onEdit() },
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadowGlow(
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
-                offsetX = 0.dp,
-                offsetY = 0.dp,
-                blurRadius = 17.dp
-            )
-    ) {
-        Text(text = "РЕДАКТИРОВАТЬ", fontWeight = FontWeight.Bold)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.fillMaxWidth()
+    ){
+        if(!isLandscape()){
+            Box(
+                modifier = Modifier.fillMaxWidth()
+            ){
+                Text(
+                    text = ">>  os: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})...",
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+                )
+            }
+            Box(
+                modifier = Modifier.fillMaxWidth()
+            ){
+                Text(
+                    text = ">>  dev: ${Build.MANUFACTURER}_${Build.MODEL}_${Build.BOARD}_${Build.DEVICE}.....",
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                    modifier = Modifier.padding(bottom = 5.dp)
+                )
+            }
+        }
+        Button(
+            shape = RectangleShape,
+            colors = ButtonDefaults.buttonColors(
+                contentColor = MaterialTheme.colorScheme.background,
+                containerColor = MaterialTheme.colorScheme.primary
+            ),
+            contentPadding = PaddingValues(vertical = 15.dp),
+            onClick = { onEdit() },
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadowGlow(
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
+                    offsetX = 0.dp,
+                    offsetY = 0.dp,
+                    blurRadius = 17.dp
+                )
+        ) {
+            Text(text = "РЕДАКТИРОВАТЬ", fontWeight = FontWeight.Bold)
+        }
     }
 }
 

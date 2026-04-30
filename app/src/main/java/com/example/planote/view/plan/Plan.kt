@@ -50,7 +50,7 @@ import com.example.planote.viewModel.plan.PlanWeekDialogMode
 fun PlannerPage() {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(20.dp),
-        modifier = Modifier.fillMaxSize().padding(16.dp)
+        modifier = Modifier.fillMaxSize().padding(15.dp)
     ) {
         item {
             HeaderBlock()
