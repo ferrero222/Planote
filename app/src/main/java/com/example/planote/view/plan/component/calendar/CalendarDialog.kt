@@ -27,9 +27,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.example.planote.R
 import com.example.planote.viewModel.plan.PlanCalendarDialogMode
 
 /*****************************************************************
@@ -55,10 +57,10 @@ private fun CalendarDialogAlertHandler(
     when(calendarDialogAlert) {
         is CalendarDialogAlert.DismissChanges -> {
             CalendarAlert(
-                title = "Закрыть окно?",
-                description = "Несохранённые изменения будут потеряны",
-                confirmText = "Закрыть",
-                dismissText = "Отмена",
+                title = stringResource(R.string.calendar_dialog_close_title),
+                description = stringResource(R.string.dialog_unsaved_changes),
+                confirmText = stringResource(R.string.calendar_dialog_close_confirm),
+                dismissText = stringResource(R.string.dialog_dismiss),
                 onConfirm = {
                     onDismiss()
                     dialogStateChange(PlanCalendarDialogMode.IDLE)

@@ -69,6 +69,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -77,6 +78,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.planote.DarkColorScheme
 import com.example.planote.MyAppFont
 import com.example.planote.PreviewContainer
+import com.example.planote.R
 import com.example.planote.isLandscape
 import com.example.planote.view.plan.PlannerBlockCard
 import com.example.planote.viewModel.plan.PlanCalendarDataHolder
@@ -164,7 +166,7 @@ private fun CalendarBlockHeader(
                     horizontalArrangement = Arrangement.spacedBy(7.dp)
                 ){
                     Text(
-                        text = ">>   КАЛЕНДАРЬ_ЗАДАЧ",
+                        text = stringResource(R.string.calendar_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
@@ -177,7 +179,7 @@ private fun CalendarBlockHeader(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Info,
-                            contentDescription = "информация",
+                            contentDescription = stringResource(R.string.calendar_info),
                             tint = MaterialTheme.colorScheme.primary.copy(0.5f),
                             modifier = Modifier.size(15.dp)
                         )
@@ -193,19 +195,19 @@ private fun CalendarBlockHeader(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Square,
-                        contentDescription = "иконка футера",
+                        contentDescription = stringResource(R.string.calendar_footer_icon),
                         tint = if(currentViewType == PlanCalendarType.DAYS) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(0.2f),
                         modifier = Modifier.size(13.dp)
                     )
                     Icon(
                         imageVector = Icons.Filled.Square,
-                        contentDescription = "иконка футера",
+                        contentDescription = stringResource(R.string.calendar_footer_icon),
                         tint = if(currentViewType == PlanCalendarType.MONTHS) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(0.2f),
                         modifier = Modifier.size(13.dp)
                     )
                     Icon(
                         imageVector = Icons.Filled.Square,
-                        contentDescription = "иконка футера",
+                        contentDescription = stringResource(R.string.calendar_footer_icon),
                         tint = if(currentViewType == PlanCalendarType.YEARS) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(0.2f),
                         modifier = Modifier.size(13.dp)
                     )
@@ -290,9 +292,9 @@ private fun CalendarTypeSelector(
                     ),
             ) {
                 Text(text = when (viewType) {
-                        PlanCalendarType.DAYS   -> "ДНИ"
-                        PlanCalendarType.MONTHS -> "МЕСЯЦЫ"
-                        PlanCalendarType.YEARS  -> "ГОДЫ"
+                        PlanCalendarType.DAYS   -> stringResource(R.string.calendar_days)
+                        PlanCalendarType.MONTHS -> stringResource(R.string.calendar_months)
+                        PlanCalendarType.YEARS  -> stringResource(R.string.calendar_years)
                     },
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
@@ -367,6 +369,9 @@ private fun CalendarCellBoxLandScape(
     entity: PlanCalendarEntityDomain = PlanCalendarEntityDomain(),
     type: PlanCalendarType,
     maxShownTasks: Int = 3,
+    showDot: Boolean = false,
+    dotColor: Color = MaterialTheme.colorScheme.primary,
+    dotSize: Dp = 5.dp,
 ) {
     val tasksFlow = remember(entity.id, type, isOutEntity) {
         if (isOutEntity || entity.id == 0L) flowOf(emptyList())
@@ -382,19 +387,34 @@ private fun CalendarCellBoxLandScape(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             if(!isOutEntity){
-                Text(
-                    textAlign = TextAlign.Center,
-                    text = label,
-                    color = if(isCurEntity) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onSurface,
-                    fontSize = 15.sp,
-                    lineHeight = boxHeight,
-                    fontWeight = if (isCurEntity) FontWeight.Bold else FontWeight.Normal,
-                    modifier = Modifier
-                        .fillMaxWidth(boxLenght)
-                        .background(
-                            color = if(isCurEntity) MaterialTheme.colorScheme.primary else Color.Transparent
+                Box(
+                   modifier = Modifier.fillMaxWidth()
+                ){
+                    Text(
+                        textAlign = TextAlign.Center,
+                        text = label,
+                        color = if(isCurEntity) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onSurface,
+                        fontSize = 15.sp,
+                        lineHeight = boxHeight,
+                        fontWeight = if (isCurEntity) FontWeight.Bold else FontWeight.Normal,
+                        modifier = Modifier
+                            .fillMaxWidth(boxLenght)
+                            .background(
+                                color = if(isCurEntity) MaterialTheme.colorScheme.primary else Color.Transparent
+                            )
+                    )
+                    if(showDot)
+                    {
+                        Box(
+                            modifier = Modifier
+                                .padding(top = 5.dp, start = 25.dp)
+                                .align(Alignment.TopCenter)
+                                .size(dotSize)
+                                .clip(RectangleShape)
+                                .background(dotColor)
                         )
-                )
+                    }
+                }
                 HorizontalDivider(
                     thickness = 3.dp,
                     color = if(isCurEntity) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
@@ -408,7 +428,7 @@ private fun CalendarCellBoxLandScape(
                 ) {
                     if (tasks.value.isEmpty()) {
                         Text(
-                            text = "Нет задач",
+                            text = stringResource(R.string.calendar_no_tasks),
                             textAlign = TextAlign.Center,
                             fontSize = 11.sp,
                             color = if(isCurEntity) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
@@ -418,7 +438,7 @@ private fun CalendarCellBoxLandScape(
                         tasks.value.forEachIndexed { index, task ->
                             if(index <= maxShownTasks){
                                 Text(
-                                    text = if(index == maxShownTasks) "...ещё [${tasks.value.size - index}]" else  task.title ?: "Без названия",
+                                    text = if(index == maxShownTasks) "...ещё [${tasks.value.size - index}]" else  task.title ?: stringResource(R.string.calendar_no_title),
                                     fontSize = 11.sp,
                                     color = if(isCurEntity) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                                     maxLines = 1,
@@ -501,7 +521,9 @@ private fun DaysCalendar(
                     isOutEntity = (day.position != DayPosition.MonthDate),
                     entity = curEntity,
                     type = PlanCalendarType.DAYS,
-                    modifier = Modifier.padding(bottom = 5.dp)
+                    dotColor = if(curLocalDate.isBefore(currentDate)) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primary,
+                    showDot = (curEntity.id.toInt() != 0 && day.position == DayPosition.MonthDate && !isCurrentDay),
+                    modifier = Modifier.padding(bottom = 5.dp),
                 )
             } else {
                 CalendarCellBoxPortrait(
@@ -545,7 +567,7 @@ private fun DaysCalendar(
                     ){
                         Icon(
                             imageVector = Icons.Filled.ReplayCircleFilled,
-                            contentDescription = "иконка футера",
+                            contentDescription = stringResource(R.string.calendar_footer_icon),
                             tint = MaterialTheme.colorScheme.primary.copy(0.5f),
                             modifier = Modifier.size(20.dp)
                         )
@@ -588,6 +610,8 @@ private fun MonthsCalendar(
                         isCurEntity = month == currentMonth,
                         entity = curEntity,
                         type = PlanCalendarType.MONTHS,
+                        showDot = (curEntity.id.toInt() != 0 && month != currentMonth),
+                        dotColor = dotColor,
                         modifier = Modifier.padding(horizontal = 15.dp).padding(top = 5.dp)
                     )
                 } else {
@@ -621,7 +645,7 @@ private fun MonthsCalendar(
             )
             Icon(
                 imageVector = Icons.Filled.CalendarViewWeek,
-                contentDescription = "иконка футера",
+                contentDescription = stringResource(R.string.calendar_footer_icon),
                 tint = MaterialTheme.colorScheme.onSurface.copy(0.2f),
                 modifier = Modifier
                     .size(20.dp)
@@ -664,6 +688,8 @@ private fun YearsCalendar(
                         isCurEntity = year == currentYear,
                         entity = curEntity,
                         type = PlanCalendarType.YEARS,
+                        showDot = (curEntity.id.toInt() != 0 && year != currentYear),
+                        dotColor = dotColor,
                         modifier = Modifier.padding(horizontal = 12.dp).padding(top = 5.dp)
                     )
                 } else {
@@ -688,7 +714,7 @@ private fun YearsCalendar(
                 .padding(22.dp)
         ) {
             Text(
-                text = "21 век",
+                text = stringResource(R.string.calendar_century),
                 fontSize = 15.sp,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
@@ -781,11 +807,11 @@ fun CalendarLoading(
 
 @Composable
 fun CalendarAlert(
-    title: String = "Предупреждение",
-    description: String? = "Несохранённые изменения будут потеряны",
+    title: String = stringResource(R.string.alert_title_warning),
+    description: String? = stringResource(R.string.alert_unsaved_changes),
     content: @Composable (() -> Unit)? = null,
-    confirmText: String = "Подтвердить",
-    dismissText: String = "Отменить",
+    confirmText: String = stringResource(R.string.alert_confirm),
+    dismissText: String = stringResource(R.string.alert_cancel),
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -861,9 +887,7 @@ fun CalendarAlert(
  * Preview
  ****************************************************************/
 @Preview(showBackground = true, backgroundColor = 0xFF121212)
-@Preview(showBackground = true, backgroundColor = 0xFF121212,
-    device = "spec:width=750dp,height=750dp,dpi=480,orientation=landscape"
-)
+@Preview(showBackground = true, backgroundColor = 0xFF121212, device = "spec:width=750dp,height=750dp,dpi=480,orientation=landscape")
 @Composable
 fun CalendarBlockPreview(
     dataState: PlanCalendarDataHolder = PlanCalendarDataHolder(

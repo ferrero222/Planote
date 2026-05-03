@@ -21,9 +21,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.planote.DarkColorScheme
+import com.example.planote.R
 import me.trishiraj.shadowglow.shadowGlow
 
 /*****************************************************************
@@ -55,7 +57,7 @@ fun HeaderBlock() {
                 ),
         )
         Text(
-            text = "ПАНЕЛЬ.РАСПИСАНИЯ",
+            text = stringResource(R.string.header_title),
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,

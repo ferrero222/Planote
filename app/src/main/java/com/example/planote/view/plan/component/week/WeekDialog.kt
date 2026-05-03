@@ -18,7 +18,6 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -28,9 +27,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.example.planote.R
 import com.example.planote.viewModel.plan.PlanWeekDialogMode
 
 /*****************************************************************
@@ -56,10 +57,10 @@ private fun WeekDialogAlertHandler(
     when(weekDialogAlert) {
         is WeekDialogAlert.DismissChanges -> {
             WeekAlert(
-                title = "Закрыть окно?",
-                description = "Несохранённые изменения будут потеряны",
-                confirmText = "Закрыть",
-                dismissText = "Отмена",
+                title = stringResource(R.string.week_dialog_close_title),
+                description = stringResource(R.string.dialog_unsaved_changes),
+                confirmText = stringResource(R.string.week_dialog_close_confirm),
+                dismissText = stringResource(R.string.dialog_dismiss),
                 onConfirm = {
                     onDismiss()
                     dialogStateChange(PlanWeekDialogMode.IDLE)
@@ -132,7 +133,7 @@ fun WeekDialogCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier
-            .width(340.dp)
+            .width(350.dp)
             .height(650.dp)
             .border(width = 1.dp, shape = RectangleShape, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.17f))
     ) {

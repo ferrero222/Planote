@@ -8,17 +8,19 @@ package com.example.planote.view.plan.component.week
 /*****************************************************************
  * Imported packages
  ****************************************************************/
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Edit
@@ -39,16 +41,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.planote.DarkColorScheme
-import com.example.planote.MyAppFont
 import com.example.planote.PreviewContainer
+import com.example.planote.R
+import com.example.planote.isLandscape
 import com.example.planote.viewModel.plan.PlanWeekDayDomain
 import com.example.planote.viewModel.plan.PlanWeekDayTaskDomain
 import com.example.planote.viewModel.plan.PlanWeekDialogDayDataHolder
@@ -88,31 +92,36 @@ private fun WeekDialogDayTaskContent(
     onSave: () -> Unit,
     onCancel: () -> Unit,
 ) {
+    val listState = rememberLazyListState()
     WeekLoading(loading) {
         Column(
             verticalArrangement = Arrangement.spacedBy(15.dp),
-            modifier = Modifier.fillMaxSize().padding(25.dp),
+            modifier = Modifier.fillMaxSize().padding(if(!isLandscape()) 17.dp else 10.dp),
         ) {
             WeekDialogDayTaskContentHeader(
                 day = dialogState.day,
                 onDismissClick = onDismissClick,
             )
-            Column(
-                verticalArrangement = Arrangement.spacedBy(15.dp),
+            LazyColumn(
+                state = listState,
                 modifier = Modifier.weight(1f).fillMaxWidth(),
             ) {
-                WeekDialogDayTaskContentTime(
-                    task = dialogState.editingTask,
-                    onTimeChange = onTimeChange,
-                )
-                WeekDialogDayTaskContentTitle(
-                    task = dialogState.editingTask,
-                    onTitleChange = onTitleChange,
-                )
-                WeekDialogDayTaskContentDescription(
-                    task = dialogState.editingTask,
-                    onDescChange = onDescChange,
-                )
+                items(1){
+                    WeekDialogDayTaskContentTime(
+                        task = dialogState.editingTask,
+                        onTimeChange = onTimeChange,
+                    )
+                    Spacer(modifier = Modifier.fillMaxWidth().height(15.dp))
+                    WeekDialogDayTaskContentTitle(
+                        task = dialogState.editingTask,
+                        onTitleChange = onTitleChange,
+                    )
+                    Spacer(modifier = Modifier.fillMaxWidth().height(15.dp))
+                    WeekDialogDayTaskContentDescription(
+                        task = dialogState.editingTask,
+                        onDescChange = onDescChange,
+                    )
+                }
             }
             WeekDialogDayTaskContentFooter(
                 onSave = onSave,
@@ -127,45 +136,44 @@ private fun WeekDialogDayTaskContentHeader(
     day: PlanWeekDayDomain,
     onDismissClick: () -> Unit
 ) {
-    Box(
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth(),
-        contentAlignment = Alignment.Center
-    ) {
-        IconButton(
-            onClick = { onDismissClick() },
-            modifier = Modifier.align(Alignment.CenterStart).size(18.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Filled.ArrowBackIosNew,
-                contentDescription = "Назад",
-                tint = MaterialTheme.colorScheme.onSurface,
-            )
-        }
-        val date = LocalDate.now().with(DayOfWeek.MONDAY).plusDays(day.num.toLong())
-        val month = date.month.getDisplayName(TextStyle.FULL, Locale.getDefault()).replaceFirstChar { it.uppercaseChar() }
-        val textHeader = "$month ${date.dayOfMonth}"
-        Text(
-            text = textHeader,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.align(Alignment.Center)
-        )
+    ){
         Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .background(
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(10.dp)
-                )
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
         ) {
+            IconButton(
+                onClick = { onDismissClick() },
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .size(24.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.ArrowBackIosNew,
+                    contentDescription = stringResource(R.string.dialog_back),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(17.dp).padding(bottom = 4.dp)
+                )
+            }
+            val date = LocalDate.now().with(DayOfWeek.MONDAY).plusDays(day.num.toLong())
+            val month = date.month.getDisplayName(TextStyle.FULL, Locale.getDefault()).uppercase()
+            val textHeader = "$month ${date.dayOfMonth}"
             Text(
-                text = "EDIT",
-                fontSize = 11.sp,
+                text = textHeader,
+                fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = 10.dp)
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                modifier = Modifier.align(Alignment.Center)
+            )
+            Text(
+                text = "// EDIT",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                modifier = Modifier.align(Alignment.CenterEnd)
             )
         }
     }
@@ -195,7 +203,7 @@ private fun WeekDialogDayTaskContentTime(
                 },
                 label = {
                     Text(
-                        text = "Ч",
+                        text = stringResource(R.string.week_day_task_hour_label),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
@@ -205,7 +213,7 @@ private fun WeekDialogDayTaskContentTime(
                     fontSize = 15.sp,
                     textAlign = TextAlign.Center
                 ),
-                shape = RoundedCornerShape(5.dp),
+                shape = RectangleShape,
                 modifier = Modifier.weight(1f).align(Alignment.CenterVertically),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
@@ -241,11 +249,11 @@ private fun WeekDialogDayTaskContentTime(
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                     )
-                },                textStyle = androidx.compose.ui.text.TextStyle(
+                },  textStyle = androidx.compose.ui.text.TextStyle(
                     fontSize = 15.sp,
                     textAlign = TextAlign.Center
                 ),
-                shape = RoundedCornerShape(5.dp),
+                shape = RectangleShape,
                 modifier = Modifier.weight(1f).align(Alignment.CenterVertically),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
@@ -266,9 +274,12 @@ private fun WeekDialogDayTaskContentTitle(
     task: PlanWeekDayTaskDomain,
     onTitleChange: (String) -> Unit
 ){
-    Column(modifier = Modifier.fillMaxWidth()) { //Description
+    Column(
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Text(
-            text = "ЗАГОЛОВОК",
+            text = stringResource(R.string.week_day_task_title),
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
@@ -276,10 +287,10 @@ private fun WeekDialogDayTaskContentTitle(
         )
         OutlinedTextField(
             value = task.title ?: "",
-            placeholder = { Text(text = "Введите заголовок", color = MaterialTheme.colorScheme.onSurface) },
+            placeholder = { Text(text = stringResource(R.string.week_day_task_title_hint), color = MaterialTheme.colorScheme.onSurface) },
             onValueChange = onTitleChange,
             textStyle = androidx.compose.ui.text.TextStyle(fontSize = 15.sp),
-            shape = RoundedCornerShape(5.dp),
+            shape = RectangleShape,
             maxLines = 5,
             modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
@@ -293,7 +304,7 @@ private fun WeekDialogDayTaskContentTitle(
             trailingIcon = {
                 Icon(
                     imageVector = Icons.Default.Edit,
-                    contentDescription = "Редактировать",
+                    contentDescription = stringResource(R.string.dialog_edit),
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(15.dp)
                 )
@@ -307,9 +318,12 @@ private fun WeekDialogDayTaskContentDescription(
     task: PlanWeekDayTaskDomain,
     onDescChange: (String) -> Unit
 ){
-    Column(modifier = Modifier.fillMaxWidth()) { //Description
+    Column(
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Text(
-            text = "ОПИСАНИЕ",
+            text = stringResource(R.string.week_day_task_description),
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
@@ -317,10 +331,10 @@ private fun WeekDialogDayTaskContentDescription(
         )
         OutlinedTextField(
             value = task.description ?: "",
-            placeholder = { Text(text = "Введите описание", color = MaterialTheme.colorScheme.onSurface) },
+            placeholder = { Text(text = stringResource(R.string.week_day_task_description_hint), color = MaterialTheme.colorScheme.onSurface) },
             onValueChange = onDescChange,
             textStyle = androidx.compose.ui.text.TextStyle(fontSize = 15.sp),
-            shape = RoundedCornerShape(5.dp),
+            shape = RectangleShape,
             maxLines = 5,
             modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
@@ -334,7 +348,7 @@ private fun WeekDialogDayTaskContentDescription(
             trailingIcon = {
                 Icon(
                     imageVector = Icons.Default.Edit,
-                    contentDescription = "Редактировать",
+                    contentDescription = stringResource(R.string.dialog_edit),
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(15.dp)
                 )
@@ -352,19 +366,19 @@ private fun WeekDialogDayTaskContentFooter(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         TextButton(
-            shape = RoundedCornerShape(10.dp),
+            shape = RectangleShape,
             onClick = { onCancel() },
             contentPadding = PaddingValues(vertical = 15.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = "ОТМЕНИТЬ",
+                text = stringResource(R.string.week_day_task_cancel),
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                 fontWeight = FontWeight.Medium,
             )
         }
         Button(
-            shape = RoundedCornerShape(10.dp),
+            shape = RectangleShape,
             colors = ButtonDefaults.buttonColors(
                 contentColor = MaterialTheme.colorScheme.background,
                 containerColor = MaterialTheme.colorScheme.primary
@@ -374,7 +388,7 @@ private fun WeekDialogDayTaskContentFooter(
             modifier = Modifier.fillMaxWidth().shadowGlow(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f), offsetX = 0.dp, offsetY = 0.dp, blurRadius = 17.dp)
 
         ) {
-            Text(text = "ДОБАВИТЬ", fontWeight = FontWeight.Bold)
+            Text(text = stringResource(R.string.week_day_task_save), fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -389,10 +403,10 @@ private fun WeekDialogDayTaskAlertHandler(
     when(weekDialogAlert) {
         is WeekDialogDayTaskAlert.DismissChanges -> {
             WeekAlert(
-                title = "Вернуться назад?",
-                description = "Несохранённые изменения будут потеряны",
-                confirmText = "Вернуться",
-                dismissText = "Отменить",
+                title = stringResource(R.string.week_day_task_back_title),
+                description = stringResource(R.string.dialog_unsaved_changes),
+                confirmText = stringResource(R.string.week_day_task_back_confirm),
+                dismissText = stringResource(R.string.dialog_cancel),
                 onConfirm = {
                     onDismiss()
                     viewModel.discardEditTask()
@@ -405,10 +419,10 @@ private fun WeekDialogDayTaskAlertHandler(
         }
         is WeekDialogDayTaskAlert.DiscardChanges -> {
             WeekAlert(
-                title = "Отменить изменения?",
-                description = "Несохранённые изменения будут потеряны",
-                confirmText = "Отменить",
-                dismissText = "Вернуться",
+                title = stringResource(R.string.week_day_task_discard_title),
+                description = stringResource(R.string.dialog_unsaved_changes),
+                confirmText = stringResource(R.string.week_day_task_discard_confirm),
+                dismissText = stringResource(R.string.week_day_task_return),
                 onConfirm = {
                     onDismiss()
                     viewModel.discardEditTask()

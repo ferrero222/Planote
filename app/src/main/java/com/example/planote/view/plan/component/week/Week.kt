@@ -31,7 +31,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.BlurOn
@@ -72,11 +71,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.planote.PreviewContainer
+import com.example.planote.R
 import com.example.planote.view.plan.PlannerBlockCard
 import com.example.planote.viewModel.plan.PlanWeekDataHolder
 import com.example.planote.viewModel.plan.PlanWeekDayDomain
@@ -144,7 +145,7 @@ private fun WeekBlock(
                         horizontalArrangement = Arrangement.spacedBy(7.dp)
                     ){
                         Text(
-                            text = ">>   КАЛЕНДАРЬ_ЗАДАЧ",
+                            text = stringResource(R.string.week_calendar_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
@@ -157,7 +158,7 @@ private fun WeekBlock(
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.Info,
-                                contentDescription = "информация",
+                                contentDescription = stringResource(R.string.week_info),
                                 tint = MaterialTheme.colorScheme.primary.copy(0.5f),
                                 modifier = Modifier.size(15.dp)
                             )
@@ -304,7 +305,7 @@ private fun WeekBlockCard(
                 }
                 Icon(
                     imageVector = icon,
-                    contentDescription = "Иконка",
+                    contentDescription = stringResource(R.string.week_icon),
                     tint = if(isToday) MaterialTheme.colorScheme.primary else if(isDay) MaterialTheme.colorScheme.onSurface.copy(0.5f) else Color.Transparent,
                     modifier = Modifier.size(25.dp)
                 )
@@ -316,12 +317,12 @@ private fun WeekBlockCard(
                 ){
                     Icon(
                         imageVector = Icons.Default.Warning,
-                        contentDescription = "Нет задач",
+                        contentDescription = stringResource(R.string.week_no_tasks),
                         tint = if(isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(0.5f),
                         modifier = Modifier.size(30.dp)
                     )
                     Text(
-                        text = "ERR_НЕТ_ДАННЫХ",
+                        text = stringResource(R.string.week_no_data),
                         fontSize = 12.sp,
                         color = if(isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(0.3f),
                         maxLines = 1,
@@ -358,12 +359,12 @@ private fun WeekBlockButton(
         ) {
             Icon(
                 imageVector = Icons.Filled.SwapHoriz,
-                contentDescription = "ПОМЕНЯТЬ ПЛАН",
+                contentDescription = stringResource(R.string.week_change_plan_icon),
                 modifier = Modifier.padding(end = 5.dp).size(22.dp),
                 tint = MaterialTheme.colorScheme.primary,
             )
             Text(
-                text = "ПОМЕНЯТЬ_ПЛАН",
+                text = stringResource(R.string.week_change_plan_text),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -381,10 +382,10 @@ private fun WeekBlockAlertHandler(
     when(weekAlert) {
         is WeekBlockAlert.NoPlan -> {
             WeekAlert(
-                title = "Информация",
-                description = "Сначала нужно создать план перед тем как редактировать дни",
-                confirmText = "Создать",
-                dismissText = "Отмена",
+                title = stringResource(R.string.week_no_plan_title),
+                description = stringResource(R.string.week_no_plan_desc),
+                confirmText = stringResource(R.string.week_no_plan_confirm),
+                dismissText = stringResource(R.string.dialog_dismiss),
                 onConfirm = {
                     onDismiss()
                     viewModel.loadWeeks()
@@ -439,11 +440,11 @@ fun WeekBlock(
 
 @Composable
 fun WeekAlert(
-    title: String = "Предупреждение",
-    description: String? = "Несохранённые изменения будут потеряны",
+    title: String = stringResource(R.string.alert_title_warning),
+    description: String? = stringResource(R.string.alert_unsaved_changes),
     content: @Composable (() -> Unit)? = null,
-    confirmText: String = "Подтвердить",
-    dismissText: String = "Отменить",
+    confirmText: String = stringResource(R.string.alert_confirm),
+    dismissText: String = stringResource(R.string.alert_cancel),
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -481,7 +482,7 @@ fun WeekAlert(
                     TextButton(
                         onClick = onDismiss,
                         modifier = Modifier.height(44.dp),
-                        shape = RoundedCornerShape(10.dp)
+                        shape = RectangleShape
                     ) {
                         Text(
                             text = dismissText,
@@ -493,7 +494,7 @@ fun WeekAlert(
                     Button(
                         onClick = onConfirm,
                         modifier = Modifier.weight(1f).height(44.dp),
-                        shape = RoundedCornerShape(10.dp),
+                        shape = RectangleShape,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary
                         )

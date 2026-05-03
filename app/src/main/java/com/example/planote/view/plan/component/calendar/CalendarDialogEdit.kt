@@ -60,11 +60,13 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.planote.PreviewContainer
+import com.example.planote.R
 import com.example.planote.isLandscape
 import com.example.planote.viewModel.plan.PlanCalendarDialogDataHolder
 import com.example.planote.viewModel.plan.PlanCalendarDialogMode
@@ -163,7 +165,7 @@ private fun CalendarDialogEditContentHeader(
             ) {
                 Icon(
                     imageVector = Icons.Filled.ArrowBackIosNew,
-                    contentDescription = "Назад",
+                    contentDescription = stringResource(R.string.dialog_back),
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(17.dp).padding(bottom = 4.dp)
                 )
@@ -206,7 +208,7 @@ private fun CalendarDialogEditContentDescription(
         modifier = Modifier.fillMaxWidth()
     ) {
         Text(
-            text = ">> ОПИСАНИЕ",
+            text = stringResource(R.string.calendar_edit_description),
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
@@ -214,7 +216,7 @@ private fun CalendarDialogEditContentDescription(
         )
         OutlinedTextField(
             value = entity.title ?: "",
-            placeholder = { Text(text = "Введите описание", color = MaterialTheme.colorScheme.onSurface) },
+            placeholder = { Text(text = stringResource(R.string.calendar_edit_description_hint), color = MaterialTheme.colorScheme.onSurface) },
             onValueChange = onTitleChange,
             textStyle = androidx.compose.ui.text.TextStyle(fontSize = 15.sp),
             shape = RectangleShape,
@@ -231,7 +233,7 @@ private fun CalendarDialogEditContentDescription(
             trailingIcon = {
                 Icon(
                     imageVector = Icons.Default.Edit,
-                    contentDescription = "Редактировать",
+                    contentDescription = stringResource(R.string.dialog_edit),
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(15.dp)
                 )
@@ -256,7 +258,7 @@ private fun CalendarDialogEditContentTasksItem(
             .padding(10.dp)
     ) {
         Text(
-            text = task.title ?: "Нет описания",
+            text = task.title ?: stringResource(R.string.calendar_edit_no_description),
             color = if(task.isDone) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface,
             fontSize = 15.sp,
             maxLines = 1,
@@ -269,7 +271,7 @@ private fun CalendarDialogEditContentTasksItem(
         ) {
             Icon(
                 imageVector = Icons.Default.EditNote,
-                contentDescription = "Редактировать",
+                contentDescription = stringResource(R.string.dialog_edit),
                 tint = if(task.isDone) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.primary,
             )
         }
@@ -279,7 +281,7 @@ private fun CalendarDialogEditContentTasksItem(
         ) {
             Icon(
                 imageVector = Icons.Default.Delete,
-                contentDescription = "Удалить",
+                contentDescription = stringResource(R.string.dialog_delete),
                 tint = if(task.isDone) MaterialTheme.colorScheme.onError.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onError,
             )
         }
@@ -315,7 +317,7 @@ private fun CalendarDialogEditContentTasks(
     ){
         Box(modifier = Modifier.fillMaxWidth()){
             Text(
-                text = ">> ЗАДАЧИ",
+                text = "${stringResource(R.string.calendar_edit_tasks)} ${if(tasks.isEmpty()) stringResource(R.string.calendar_edit_tasks_empty) else ""}",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
@@ -323,7 +325,7 @@ private fun CalendarDialogEditContentTasks(
             )
             if(tasks.isNotEmpty()){
                 Text(
-                    text = "// АКТИВНЫХ ${tasks.size}",
+                    text = "${stringResource(R.string.calendar_edit_active_count)} ${tasks.size}",
                     fontSize = 10.sp,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                     modifier = Modifier.align(Alignment.CenterEnd)
@@ -391,7 +393,7 @@ private fun CalendarDialogEditContentFooter(
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier .fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
         ) {
             TextButton(
                 shape = RectangleShape,
@@ -409,7 +411,7 @@ private fun CalendarDialogEditContentFooter(
                 )
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    text = "Добавить задачу",
+                    text = stringResource(R.string.calendar_edit_add_task),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     fontSize = 13.sp
@@ -424,7 +426,7 @@ private fun CalendarDialogEditContentFooter(
                         color = MaterialTheme.colorScheme.onError.copy(alpha = 0.15f))
             ) {
                 Text(
-                    text = "Очистить всё",
+                    text = stringResource(R.string.calendar_edit_clear_all),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onError.copy(alpha = 0.8f),
@@ -449,7 +451,7 @@ private fun CalendarDialogEditContentFooter(
                     blurRadius = 17.dp)
 
         ) {
-            Text(text = "СОХРАНИТЬ", fontWeight = FontWeight.Bold)
+            Text(text = stringResource(R.string.dialog_save), fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -465,10 +467,10 @@ private fun CalendarDialogEditAlertHandler(
     when(calendarDialogAlert) {
         is CalendarDialogEditAlert.DiscardChanges -> {
             CalendarAlert(
-                title = "Отменить изменения?",
-                description = "Несохранённые изменения будут потеряны",
-                confirmText = "Отменить",
-                dismissText = "Вернуться",
+                title = stringResource(R.string.calendar_edit_discard_title),
+                description = stringResource(R.string.dialog_unsaved_changes),
+                confirmText = stringResource(R.string.calendar_edit_discard_confirm),
+                dismissText = stringResource(R.string.calendar_edit_return),
                 onConfirm = {
                     onDismiss()
                     viewModel.discardEntityAndTasks()
@@ -484,10 +486,10 @@ private fun CalendarDialogEditAlertHandler(
         }
         is CalendarDialogEditAlert.DeleteEntity -> {
             CalendarAlert(
-                title = "Удалить запись?",
-                description = "Все данные будут удалены",
-                confirmText = "Удалить",
-                dismissText = "Отменить",
+                title = stringResource(R.string.calendar_edit_delete_record_title),
+                description = stringResource(R.string.calendar_edit_delete_record_desc),
+                confirmText = stringResource(R.string.dialog_delete),
+                dismissText = stringResource(R.string.dialog_cancel),
                 onConfirm = {
                     onDismiss()
                     viewModel.clearEntityAndTasks()
@@ -501,10 +503,10 @@ private fun CalendarDialogEditAlertHandler(
         is CalendarDialogEditAlert.DeleteTask -> {
             val task = calendarDialogAlert.task
             CalendarAlert(
-                title = "Удалить задачу?",
-                description = "Эта задача будет удалена",
-                confirmText = "Удалить",
-                dismissText = "Отменить",
+                title = stringResource(R.string.calendar_edit_delete_task_title),
+                description = stringResource(R.string.calendar_edit_delete_task_desc),
+                confirmText = stringResource(R.string.dialog_delete),
+                dismissText = stringResource(R.string.dialog_cancel),
                 onConfirm = {
                     onDismiss()
                     viewModel.deleteTask(task)

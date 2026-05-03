@@ -16,7 +16,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
+import com.example.planote.R
 
 /*****************************************************************
  * Top Level Functions
@@ -29,8 +31,8 @@ fun SettingsPage() {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text("⚙️", fontSize = 48.sp)
-            Text("Страница настроек", fontSize = 24.sp, color = MaterialTheme.colorScheme.onBackground)
-            Text("Плавно проведите пальцем влево/вправо", fontSize = 14.sp,
+            Text(stringResource(R.string.page_settings), fontSize = 24.sp, color = MaterialTheme.colorScheme.onBackground)
+            Text(stringResource(R.string.page_swipe_instruction), fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f))
         }
     }

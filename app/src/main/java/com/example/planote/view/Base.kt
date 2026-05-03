@@ -41,6 +41,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.bottombar.AnimatedBottomBar
 import com.example.bottombar.DEFAULT_INDICATOR_HEIGHT
@@ -48,6 +49,7 @@ import com.example.bottombar.components.BottomBarItem
 import com.example.bottombar.model.IndicatorStyle
 import com.example.bottombar.model.ItemStyle
 import com.example.planote.DarkColorScheme
+import com.example.planote.R
 import com.example.planote.isLandscape
 import com.example.planote.view.note.NotesPage
 import com.example.planote.view.plan.PlannerPage
@@ -59,13 +61,13 @@ import kotlin.math.abs
  * Variables, data, enum
  ****************************************************************/
 sealed class Screen(
-    val title: String,
+    val title: @Composable () -> String,
     val icon: ImageVector
 ) {
-    object Planner : Screen("Планирование", Icons.Default.DateRange)
-    object Notes : Screen("Заметки", Icons.AutoMirrored.Filled.Note)
-    object Server : Screen("Сервер", Icons.Default.Cloud)
-    object Settings : Screen("Настройки", Icons.Default.Settings)
+    object Planner : Screen({ stringResource(R.string.nav_planner) }, Icons.Default.DateRange)
+    object Notes : Screen({ stringResource(R.string.nav_notes) }, Icons.AutoMirrored.Filled.Note)
+    object Server : Screen({ stringResource(R.string.nav_server) }, Icons.Default.Cloud)
+    object Settings : Screen({ stringResource(R.string.nav_settings) }, Icons.Default.Settings)
 
     companion object {
         val items = listOf(Planner, Notes, Server, Settings)
@@ -169,7 +171,7 @@ private fun BottomNavigationBar(
                     selected = index == selectedIndex,
                     onClick = { onScreenSelected(index) },
                     imageVector = screen.icon,
-                    label = screen.title,
+                    label = screen.title(),
                     containerColor = Color.Transparent,
                     contentColor = if(index == selectedIndex) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
                     iconColor = if(index == selectedIndex) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),

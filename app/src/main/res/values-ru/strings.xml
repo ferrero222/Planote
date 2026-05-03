@@ -1,4 +1,186 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Планот</string>
+
+    <!-- Navigation -->
+    <string name="nav_planner">Планирование</string>
+    <string name="nav_notes">Заметки</string>
+    <string name="nav_server">Сервер</string>
+    <string name="nav_settings">Настройки</string>
+
+    <!-- Header -->
+    <string name="header_title">ПАНЕЛЬ.РАСПИСАНИЯ</string>
+
+    <!-- Today Block -->
+    <string name="today_active_schedule">АКТИВНОЕ РАСПИСАНИЕ</string>
+    <string name="today_weekly_tasks">НЕДЕЛЬНЫЕ ЗАДАЧИ</string>
+    <string name="today_daily_tasks">ЗАДАЧИ ДНЯ</string>
+    <string name="today_monthly_tasks">ЗАДАЧИ МЕСЯЦА</string>
+    <string name="today_yearly_tasks">ЗАДАЧИ ГОДА</string>
+    <string name="today_no_tasks">Нет задач на сегодня</string>
+    <string name="today_no_title">Без названия</string>
+    <string name="today_expand">Развернуть</string>
+    <string name="today_collapse">Свернуть</string>
+
+    <!-- Page placeholders -->
+    <string name="page_notes">Страница заметок</string>
+    <string name="page_server">Страница сервера</string>
+    <string name="page_settings">Страница настроек</string>
+    <string name="page_swipe_instruction">Плавно проведите пальцем влево/вправо</string>
+
+    <!-- Common Dialog -->
+    <string name="dialog_warning">Предупреждение</string>
+    <string name="dialog_unsaved_changes">Несохранённые изменения будут потеряны</string>
+    <string name="dialog_confirm">Подтвердить</string>
+    <string name="dialog_cancel">Отменить</string>
+    <string name="dialog_close">Закрыть</string>
+    <string name="dialog_dismiss">Отмена</string>
+    <string name="dialog_back">Назад</string>
+    <string name="dialog_save">СОХРАНИТЬ</string>
+    <string name="dialog_add">ДОБАВИТЬ</string>
+    <string name="dialog_edit">Редактировать</string>
+    <string name="dialog_delete">Удалить</string>
+    <string name="dialog_discard">Отменить</string>
+
+    <!-- Calendar Block -->
+    <string name="calendar_title">>>   КАЛЕНДАРЬ_ЗАДАЧ</string>
+    <string name="calendar_info">информация</string>
+    <string name="calendar_days">ДНИ</string>
+    <string name="calendar_months">МЕСЯЦЫ</string>
+    <string name="calendar_years">ГОДЫ</string>
+    <string name="calendar_no_tasks">Нет задач</string>
+    <string name="calendar_no_title">Без названия</string>
+    <string name="calendar_century">21 век</string>
+    <string name="calendar_footer_icon">иконка футера</string>
+
+    <!-- Calendar Dialog -->
+    <string name="calendar_dialog_close_title">Закрыть окно?</string>
+    <string name="calendar_dialog_close_confirm">Закрыть</string>
+
+    <!-- Calendar Edit Dialog -->
+    <string name="calendar_edit_description">>> ОПИСАНИЕ</string>
+    <string name="calendar_edit_description_hint">Введите описание</string>
+    <string name="calendar_edit_no_description">Нет описания</string>
+    <string name="calendar_edit_tasks">>> ЗАДАЧИ</string>
+    <string name="calendar_edit_tasks_empty">[ПУСТО]</string>
+    <string name="calendar_edit_active_count">// АКТИВНЫХ</string>
+    <string name="calendar_edit_add_task">Добавить задачу</string>
+    <string name="calendar_edit_clear_all">Очистить всё</string>
+    <string name="calendar_edit_discard_title">Отменить изменения?</string>
+    <string name="calendar_edit_discard_confirm">Отменить</string>
+    <string name="calendar_edit_return">Вернуться</string>
+    <string name="calendar_edit_delete_record_title">Удалить запись?</string>
+    <string name="calendar_edit_delete_record_desc">Все данные будут удалены</string>
+    <string name="calendar_edit_delete_task_title">Удалить задачу?</string>
+    <string name="calendar_edit_delete_task_desc">Эта задача будет удалена</string>
+
+    <!-- Calendar View Dialog -->
+    <string name="calendar_view_description">>> ОПИСАНИЕ</string>
+    <string name="calendar_view_no_description">Нет описания</string>
+    <string name="calendar_view_no_text">Нет</string>
+    <string name="calendar_view_tasks">>> ЗАДАЧИ</string>
+    <string name="calendar_view_active_count">// АКТИВНЫХ</string>
+    <string name="calendar_view_edit_button">РЕДАКТИРОВАТЬ</string>
+    <string name="calendar_view_expand">Развернуть</string>
+    <string name="calendar_view_collapse">Свернуть</string>
+
+    <!-- Calendar Task Dialog -->
+    <string name="calendar_task_title">>> ЗАГОЛОВОК</string>
+    <string name="calendar_task_title_hint">Введите заголовок</string>
+    <string name="calendar_task_description">>> ОПИСАНИЕ</string>
+    <string name="calendar_task_description_hint">Введите описание</string>
+    <string name="calendar_task_cancel">ОТМЕНИТЬ</string>
+    <string name="calendar_task_save">ДОБАВИТЬ</string>
+    <string name="calendar_task_back_confirm_title">Вернуться назад?</string>
+    <string name="calendar_task_back_confirm">Вернуться</string>
+    <string name="calendar_task_discard_title">Отменить изменения?</string>
+    <string name="calendar_task_discard_confirm">Отменить</string>
+    <string name="calendar_task_return">Вернуться</string>
+
+    <!-- Week Block -->
+    <string name="week_calendar_title">>>   КАЛЕНДАРЬ_ЗАДАЧ</string>
+    <string name="week_info">информация</string>
+    <string name="week_icon">Иконка</string>
+    <string name="week_no_tasks">Нет задач</string>
+    <string name="week_no_data">ERR_НЕТ_ДАННЫХ</string>
+    <string name="week_change_plan_icon">ПОМЕНЯТЬ ПЛАН</string>
+    <string name="week_change_plan_text">ПОМЕНЯТЬ_ПЛАН</string>
+    <string name="week_no_plan_title">Информация</string>
+    <string name="week_no_plan_desc">Сначала нужно создать план перед тем как редактировать дни</string>
+    <string name="week_no_plan_confirm">Создать</string>
+
+    <!-- Week Dialog -->
+    <string name="week_dialog_close_title">Закрыть окно?</string>
+    <string name="week_dialog_close_confirm">Закрыть</string>
+
+    <!-- Week Day View -->
+    <string name="week_day_view_description">>> ОПИСАНИЕ</string>
+    <string name="week_day_view_no_description">Нет описания</string>
+    <string name="week_day_view_no_text">Нет</string>
+    <string name="week_day_view_tasks">>> ЗАДАЧИ</string>
+    <string name="week_day_view_active_count">// АКТИВНЫХ</string>
+    <string name="week_day_view_edit_button">РЕДАКТИРОВАТЬ</string>
+    <string name="week_day_view_expand">Развернуть</string>
+    <string name="week_day_view_collapse">Свернуть</string>
+
+    <!-- Week Day Edit -->
+    <string name="week_day_edit_description">>> ОПИСАНИЕ</string>
+    <string name="week_day_edit_hint">Введите описание</string>
+    <string name="week_day_edit_no_description">Нет описания</string>
+    <string name="week_day_edit_tasks">>> ЗАДАЧИ</string>
+    <string name="week_day_edit_tasks_empty">[ПУСТО]</string>
+    <string name="week_day_edit_active_count">// АКТИВНЫХ</string>
+    <string name="week_day_edit_add_task">Добавить задачу</string>
+    <string name="week_day_edit_clear_all">Очистить всё</string>
+    <string name="week_day_edit_save">СОХРАНИТЬ</string>
+    <string name="week_day_edit_discard_title">Отменить изменения?</string>
+    <string name="week_day_edit_discard_confirm">Отменить</string>
+    <string name="week_day_edit_return">Вернуться</string>
+    <string name="week_day_edit_delete_record_title">Удалить запись?</string>
+    <string name="week_day_edit_delete_record_desc">Все данные будут удалены</string>
+    <string name="week_day_edit_delete_task_title">Удалить задачу?</string>
+    <string name="week_day_edit_delete_task_desc">Эта задача будет удалена</string>
+
+    <!-- Week Day Task -->
+    <string name="week_day_task_title">>> ЗАГОЛОВОК</string>
+    <string name="week_day_task_title_hint">Введите заголовок</string>
+    <string name="week_day_task_hour_label">Ч</string>
+    <string name="week_day_task_description">>> ОПИСАНИЕ</string>
+    <string name="week_day_task_description_hint">Введите описание</string>
+    <string name="week_day_task_cancel">ОТМЕНИТЬ</string>
+    <string name="week_day_task_save">ДОБАВИТЬ</string>
+    <string name="week_day_task_back_title">Вернуться назад?</string>
+    <string name="week_day_task_back_confirm">Вернуться</string>
+    <string name="week_day_task_discard_title">Отменить изменения?</string>
+    <string name="week_day_task_discard_confirm">Отменить</string>
+    <string name="week_day_task_return">Вернуться</string>
+
+    <!-- Week Plan Change -->
+    <string name="week_plan_plans">ПЛАНЫ</string>
+    <string name="week_plan_no_title">Без названия</string>
+    <string name="week_plan_active_plans">АКТИВНЫЕ ПЛАНЫ</string>
+    <string name="week_plan_empty">[ПУСТО]</string>
+    <string name="week_plan_add_new">Добавить новый план</string>
+    <string name="week_plan_delete_title">Удалить план?</string>
+    <string name="week_plan_delete_desc">Этот план будет удален</string>
+
+    <!-- Week Plan Add -->
+    <string name="week_plan_add_editing">РЕДАКТИРОВАНИЕ</string>
+    <string name="week_plan_add_title">>> ЗАГОЛОВОК</string>
+    <string name="week_plan_add_title_hint">Введите заголовок</string>
+    <string name="week_plan_add_description">>> ОПИСАНИЕ</string>
+    <string name="week_plan_add_description_hint">Введите описание</string>
+    <string name="week_plan_add_cancel">ОТМЕНИТЬ</string>
+    <string name="week_plan_add_save">ДОБАВИТЬ</string>
+    <string name="week_plan_add_back_title">Вернуться назад?</string>
+    <string name="week_plan_add_back_confirm">Вернуться</string>
+    <string name="week_plan_add_discard_title">Отменить изменения?</string>
+    <string name="week_plan_add_discard_confirm">Отменить</string>
+    <string name="week_plan_add_return">Вернуться</string>
+
+    <!-- Calendar Alert (shared) -->
+    <string name="alert_title_warning">Предупреждение</string>
+    <string name="alert_unsaved_changes">Несохранённые изменения будут потеряны</string>
+    <string name="alert_confirm">Подтвердить</string>
+    <string name="alert_cancel">Отменить</string>
 </resources>

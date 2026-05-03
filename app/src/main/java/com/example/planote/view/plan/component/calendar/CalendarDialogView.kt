@@ -58,11 +58,13 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.planote.PreviewContainer
+import com.example.planote.R
 import com.example.planote.isLandscape
 import com.example.planote.viewModel.plan.PlanCalendarDialogDataHolder
 import com.example.planote.viewModel.plan.PlanCalendarDialogMode
@@ -139,7 +141,7 @@ private fun CalendarDialogViewContentHeader(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Close,
-                    contentDescription = "Закрыть",
+                    contentDescription = stringResource(R.string.dialog_close),
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(22.dp).padding(bottom = 4.dp)
                 )
@@ -182,7 +184,7 @@ private fun CalendarDialogViewContentDescription(
             modifier = Modifier.fillMaxWidth()
         ){
             Text(
-                text = ">> ОПИСАНИЕ",
+                text = stringResource(R.string.calendar_view_description),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
@@ -221,7 +223,7 @@ private fun CalendarDialogViewContentTasksItem(
             .padding(10.dp)
     ) {
         Text(
-            text = task.title ?: "Нет описания",
+            text = task.title ?: stringResource(R.string.calendar_view_no_description),
             color = if (task.isDone) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface,
             fontSize = 15.sp,
             maxLines = 1,
@@ -232,7 +234,7 @@ private fun CalendarDialogViewContentTasksItem(
             Icon(
                 imageVector = if (expandedTaskState) Icons.Default.KeyboardArrowUp
                 else Icons.Default.KeyboardArrowDown,
-                contentDescription = if (expandedTaskState) "Свернуть" else "Развернуть",
+                contentDescription = if (expandedTaskState) stringResource(R.string.calendar_view_collapse) else stringResource(R.string.calendar_view_expand),
                 tint = if(task.isDone) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(20.dp)
             )
@@ -269,7 +271,7 @@ private fun CalendarDialogViewContentTasksItem(
                 .padding(start = 10.dp, end = 10.dp, bottom = 10.dp)
         ){
             Text(
-                text = task.description ?: "Нет",
+                text = task.description ?: stringResource(R.string.calendar_view_no_text),
                 color = if (task.isDone) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 fontSize = 13.sp,
                 maxLines = 6,
@@ -290,14 +292,14 @@ private fun CalendarDialogViewContentTasks(
     ) {
         Box(modifier = Modifier.fillMaxWidth()){
             Text(
-                text = ">> ЗАДАЧИ",
+                text = stringResource(R.string.calendar_view_tasks),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                 modifier = Modifier.align(Alignment.CenterStart)
             )
             Text(
-                text = "// АКТИВНЫХ ${tasks.size}",
+                text = "${stringResource(R.string.calendar_view_active_count)} ${tasks.size}",
                 fontSize = 10.sp,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 modifier = Modifier.align(Alignment.CenterEnd)
@@ -393,7 +395,7 @@ private fun CalendarDialogViewContentFooter(
                     blurRadius = 17.dp
                 )
         ) {
-            Text(text = "РЕДАКТИРОВАТЬ", fontWeight = FontWeight.Bold)
+            Text(text = stringResource(R.string.calendar_view_edit_button), fontWeight = FontWeight.Bold)
         }
     }
 }

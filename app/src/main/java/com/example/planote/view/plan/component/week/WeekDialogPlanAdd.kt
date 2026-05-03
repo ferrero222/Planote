@@ -8,26 +8,19 @@ package com.example.planote.view.plan.component.week
 /*****************************************************************
  * Imported packages
  ****************************************************************/
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -43,16 +36,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.planote.DarkColorScheme
-import com.example.planote.MyAppFont
 import com.example.planote.PreviewContainer
+import com.example.planote.R
+import com.example.planote.isLandscape
 import com.example.planote.viewModel.plan.PlanWeekDialogMode
 import com.example.planote.viewModel.plan.PlanWeekDialogPlanDataHolder
 import com.example.planote.viewModel.plan.PlanWeekDomain
@@ -88,7 +83,7 @@ private fun WeekDialogPlanAddContent(
     WeekLoading(loading) {
         Column(
             verticalArrangement = Arrangement.spacedBy(15.dp),
-            modifier = Modifier.fillMaxSize().padding(25.dp),
+            modifier = Modifier.fillMaxSize().padding(if(!isLandscape()) 17.dp else 10.dp),
         ) {
             WeekDialogPlanAddContentHeader(
                 onDismissClick = onDismissClick,
@@ -118,43 +113,41 @@ private fun WeekDialogPlanAddContent(
 private fun WeekDialogPlanAddContentHeader(
     onDismissClick: () -> Unit
 ) {
-    Box(
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth(),
-        contentAlignment = Alignment.Center
-    ) {
-        IconButton(
-            onClick = { onDismissClick() },
-            modifier = Modifier.align(Alignment.CenterStart).size(16.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Filled.ArrowBackIosNew,
-                contentDescription = "Назад",
-                tint = MaterialTheme.colorScheme.onSurface,
-            )
-        }
-        Text(
-            text = "РЕДАКТИРОВАНИЕ",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.align(Alignment.Center)
-        )
+    ){
         Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .background(
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(10.dp)
-                )
-
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
         ) {
+            IconButton(
+                onClick = { onDismissClick() },
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .size(24.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.ArrowBackIosNew,
+                    contentDescription = stringResource(R.string.dialog_back),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(17.dp).padding(bottom = 4.dp)
+                )
+            }
             Text(
-                text = "EDIT",
-                fontSize = 11.sp,
+                text = stringResource(R.string.week_plan_add_editing),
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = 10.dp)
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                modifier = Modifier.align(Alignment.Center)
+            )
+            Text(
+                text = "// EDIT",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                modifier = Modifier.align(Alignment.CenterEnd)
             )
         }
     }
@@ -165,9 +158,12 @@ private fun WeekDialogPlanAddContentTitle(
     week: PlanWeekDomain,
     onTitleChange: (String) -> Unit
 ){
-    Column(modifier = Modifier.fillMaxWidth()) { //Description
+    Column(
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Text(
-            text = "ЗАГОЛОВОК",
+            text = stringResource(R.string.week_plan_add_title),
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
@@ -175,10 +171,10 @@ private fun WeekDialogPlanAddContentTitle(
         )
         OutlinedTextField(
             value = week.title ?: "",
-            placeholder = { Text(text = "Введите заголовок", color = MaterialTheme.colorScheme.onSurface) },
+            placeholder = { Text(text = stringResource(R.string.week_plan_add_title_hint), color = MaterialTheme.colorScheme.onSurface) },
             onValueChange = onTitleChange,
             textStyle = TextStyle(fontSize = 15.sp),
-            shape = RoundedCornerShape(5.dp),
+            shape = RectangleShape,
             maxLines = 5,
             modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
@@ -192,7 +188,7 @@ private fun WeekDialogPlanAddContentTitle(
             trailingIcon = {
                 Icon(
                     imageVector = Icons.Default.Edit,
-                    contentDescription = "Редактировать",
+                    contentDescription = stringResource(R.string.dialog_edit),
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(15.dp)
                 )
@@ -206,9 +202,12 @@ private fun WeekDialogPlanAddContentDescription(
     week: PlanWeekDomain,
     onDescChange: (String) -> Unit
 ){
-    Column(modifier = Modifier.fillMaxWidth()) { //Description
+    Column(
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Text(
-            text = "ОПИСАНИЕ",
+            text = stringResource(R.string.week_plan_add_description),
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
@@ -216,10 +215,10 @@ private fun WeekDialogPlanAddContentDescription(
         )
         OutlinedTextField(
             value = week.description ?: "",
-            placeholder = { Text(text = "Введите описание", color = MaterialTheme.colorScheme.onSurface) },
+            placeholder = { Text(text = stringResource(R.string.week_plan_add_description_hint), color = MaterialTheme.colorScheme.onSurface) },
             onValueChange = onDescChange,
             textStyle = TextStyle(fontSize = 15.sp),
-            shape = RoundedCornerShape(5.dp),
+            shape = RectangleShape,
             maxLines = 5,
             modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
@@ -233,7 +232,7 @@ private fun WeekDialogPlanAddContentDescription(
             trailingIcon = {
                 Icon(
                     imageVector = Icons.Default.Edit,
-                    contentDescription = "Редактировать",
+                    contentDescription = stringResource(R.string.dialog_edit),
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(15.dp)
                 )
@@ -251,19 +250,19 @@ private fun WeekDialogPlanAddContentFooter(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         TextButton(
-            shape = RoundedCornerShape(10.dp),
+            shape = RectangleShape,
             onClick = { onCancel() },
             contentPadding = PaddingValues(vertical = 15.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = "ОТМЕНИТЬ",
+                text = stringResource(R.string.week_plan_add_cancel),
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                 fontWeight = FontWeight.Medium,
             )
         }
         Button(
-            shape = RoundedCornerShape(10.dp),
+            shape = RectangleShape,
             colors = ButtonDefaults.buttonColors(
                 contentColor = MaterialTheme.colorScheme.background,
                 containerColor = MaterialTheme.colorScheme.primary
@@ -273,7 +272,7 @@ private fun WeekDialogPlanAddContentFooter(
             modifier = Modifier.fillMaxWidth().shadowGlow(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f), offsetX = 0.dp, offsetY = 0.dp, blurRadius = 17.dp)
 
         ) {
-            Text(text = "ДОБАВИТЬ", fontWeight = FontWeight.Bold)
+            Text(text = stringResource(R.string.week_plan_add_save), fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -289,10 +288,10 @@ private fun WeekDialogPlanAddAlertHandler(
     when(planDialogAlert) {
         is WeekDialogPlanAddAlert.DismissChanges -> {
             WeekAlert(
-                title = "Вернуться назад?",
-                description = "Несохранённые изменения будут потеряны",
-                confirmText = "Вернуться",
-                dismissText = "Отменить",
+                title = stringResource(R.string.week_plan_add_back_title),
+                description = stringResource(R.string.dialog_unsaved_changes),
+                confirmText = stringResource(R.string.week_plan_add_back_confirm),
+                dismissText = stringResource(R.string.dialog_cancel),
                 onConfirm = {
                     onDismiss()
                     viewModel.discardEditWeek()
@@ -305,10 +304,10 @@ private fun WeekDialogPlanAddAlertHandler(
         }
         is WeekDialogPlanAddAlert.DiscardChanges -> {
             WeekAlert(
-                title = "Отменить изменения?",
-                description = "Несохранённые изменения будут потеряны",
-                confirmText = "Отменить",
-                dismissText = "Вернуться",
+                title = stringResource(R.string.week_plan_add_discard_title),
+                description = stringResource(R.string.dialog_unsaved_changes),
+                confirmText = stringResource(R.string.week_plan_add_discard_confirm),
+                dismissText = stringResource(R.string.week_plan_add_return),
                 onConfirm = {
                     onDismiss()
                     viewModel.discardEditWeek()

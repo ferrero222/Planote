@@ -32,7 +32,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -54,16 +53,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.planote.DarkColorScheme
-import com.example.planote.MyAppFont
 import com.example.planote.PreviewContainer
+import com.example.planote.R
+import com.example.planote.isLandscape
 import com.example.planote.viewModel.plan.PlanWeekDayDomain
 import com.example.planote.viewModel.plan.PlanWeekDayTaskDomain
 import com.example.planote.viewModel.plan.PlanWeekDialogDayDataHolder
@@ -97,7 +98,7 @@ private fun WeekDialogDayViewContent(
     WeekLoading(loading) {
         Column(
             verticalArrangement = Arrangement.spacedBy(15.dp),
-            modifier = Modifier.fillMaxSize().padding(25.dp),
+            modifier = Modifier.fillMaxSize().padding(if(!isLandscape()) 17.dp else 10.dp),
         ) {
             WeekDialogDayViewContentHeader(
                 day = dialogState.day,
@@ -122,46 +123,43 @@ private fun WeekDialogDayViewContentHeader(
     day: PlanWeekDayDomain,
     onDismissClick: () -> Unit
 ) {
-    Box(
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth(),
-        contentAlignment = Alignment.Center
-    ) {
-        IconButton(
-            onClick = { onDismissClick() },
-            modifier = Modifier.align(Alignment.CenterStart).size(20.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Close,
-                contentDescription = "Закрыть",
-                tint = MaterialTheme.colorScheme.onSurface,
-            )
-        }
-        val date = LocalDate.now().with(DayOfWeek.MONDAY).plusDays(day.num.toLong())
-        val month = date.month.getDisplayName(TextStyle.FULL, Locale.getDefault()).replaceFirstChar { it.uppercaseChar() }
-        val textHeader = "$month ${date.dayOfMonth}"
-        Text(
-            text = textHeader,
-            fontSize = 19.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.align(Alignment.Center)
-        )
+    ){
         Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .background(
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(15.dp)
-                )
-
+            modifier = Modifier.fillMaxWidth(),
         ) {
+            IconButton(
+                onClick = { onDismissClick() },
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .size(24.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = stringResource(R.string.dialog_close),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(22.dp).padding(bottom = 4.dp)
+                )
+            }
+            val date = LocalDate.now().with(DayOfWeek.MONDAY).plusDays(day.num.toLong())
+            val month = date.month.getDisplayName(TextStyle.FULL, Locale.getDefault()).uppercase()
+            val textHeader = "$month ${date.dayOfMonth}"
             Text(
-                text = "VIEW",
-                fontSize = 11.sp,
+                text = textHeader,
+                fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = 10.dp)
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                modifier = Modifier.align(Alignment.Center)
+            )
+            Text(
+                text = "// VIEW",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                modifier = Modifier.align(Alignment.CenterEnd)
             )
         }
     }
@@ -173,10 +171,11 @@ private fun WeekDialogDayViewContentDescription(
 ){
     if(day.title.isNullOrEmpty()) return
     Column(
+        verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Text(
-            text = "ОПИСАНИЕ",
+            text = stringResource(R.string.week_day_view_description),
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
@@ -184,7 +183,10 @@ private fun WeekDialogDayViewContentDescription(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f), shape = RoundedCornerShape(5.dp))
+                .background(
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
+                    shape = RectangleShape
+                )
         ){
             Text(
                 text = day.title,
@@ -204,78 +206,80 @@ private fun WeekDialogDayViewContentTasksItem(
 ){
     val hasDescription = !task.description.isNullOrBlank()
     var expandedTaskState by remember { mutableStateOf(false) }
-    Column(
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .background(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f), shape = RoundedCornerShape(5.dp))
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(5.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(enabled = hasDescription) { expandedTaskState = !expandedTaskState }
-                .padding(10.dp)
-        ) {
-            Text(
-                text = task.title ?: "Нет описания",
-                color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 15.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
+            .clickable(enabled = hasDescription) { expandedTaskState = !expandedTaskState }
+            .background(
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
+                shape = RectangleShape
             )
-            if(task.time != LocalTime.MIDNIGHT) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                ){
-                    Icon(
-                        imageVector = Icons.Default.Schedule,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Text(
-                        text = task.time.format(DateTimeFormatter.ofPattern("HH:mm")),
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(start = 2.dp)
-                    )
-                }
-            }
-            if(hasDescription) {
+            .padding(10.dp)
+    ) {
+        Text(
+            text = task.title ?: stringResource(R.string.week_day_view_no_description),
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 15.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+        if(task.time != LocalTime.MIDNIGHT) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ){
                 Icon(
-                    imageVector = if (expandedTaskState) Icons.Default.KeyboardArrowUp
-                    else Icons.Default.KeyboardArrowDown,
-                    contentDescription = if (expandedTaskState) "Свернуть" else "Развернуть",
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(20.dp)
+                    imageVector = Icons.Default.Schedule,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(14.dp)
+                )
+                Text(
+                    text = task.time.format(DateTimeFormatter.ofPattern("HH:mm")),
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(start = 2.dp, top = 3.dp)
                 )
             }
-            else{
-                Spacer(modifier = Modifier.size(20.dp))
-            }
         }
-        AnimatedVisibility(
-            visible = expandedTaskState && hasDescription,
-            enter = expandVertically(
-                expandFrom = Alignment.Top,
-                animationSpec = tween(durationMillis = 300)
-            ),
-            exit = shrinkVertically(
-                shrinkTowards = Alignment.Top,
-                animationSpec = tween(durationMillis = 300)
+        if(hasDescription) {
+            Icon(
+                imageVector = if (expandedTaskState) Icons.Default.KeyboardArrowUp
+                else Icons.Default.KeyboardArrowDown,
+                contentDescription = if (expandedTaskState) stringResource(R.string.week_day_view_collapse) else stringResource(R.string.week_day_view_expand),
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(20.dp)
             )
-        ) {
+        }
+        else{
+            Spacer(modifier = Modifier.size(20.dp))
+        }
+    }
+    AnimatedVisibility(
+        visible = expandedTaskState && hasDescription,
+        enter = expandVertically(
+            expandFrom = Alignment.Top,
+            animationSpec = tween(durationMillis = 300)
+        ),
+        exit = shrinkVertically(
+            shrinkTowards = Alignment.Top,
+            animationSpec = tween(durationMillis = 300)
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+                .padding(start = 10.dp, end = 10.dp, bottom = 10.dp)
+        ){
             Text(
-                text = task.description ?: "Нет",
+                text = task.description ?: stringResource(R.string.week_day_view_no_text),
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 fontSize = 13.sp,
                 maxLines = 6,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 10.dp, end = 10.dp, bottom = 10.dp)
             )
         }
     }
@@ -287,17 +291,20 @@ private fun WeekDialogDayViewContentTasks(
 ){
     if(tasks.isEmpty()) return
     val listState = rememberLazyListState()
-    Column{
+    Column(
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.fillMaxWidth()
+    ){
         Box(modifier = Modifier.fillMaxWidth()){
             Text(
-                text = "ЗАДАЧИ",
+                text = stringResource(R.string.week_day_view_tasks),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                 modifier = Modifier.align(Alignment.CenterStart)
             )
             Text(
-                text = "${tasks.size} АКТИВНЫХ",
+                text = "${stringResource(R.string.week_day_view_active_count)} ${tasks.size}",
                 fontSize = 10.sp,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 modifier = Modifier.align(Alignment.CenterEnd)
@@ -324,14 +331,14 @@ private fun WeekDialogDayViewContentTasks(
                     visible = listState.canScrollForward,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(60.dp),
+                        .height(if(!isLandscape()) 50.dp else 15.dp),
                     enter = fadeIn(animationSpec = tween(150)),
                     exit = fadeOut(animationSpec = tween(150))
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(60.dp)
+                            .height(if(!isLandscape()) 50.dp else 15.dp)
                             .background(
                                 Brush.verticalGradient(
                                     colors = listOf(
@@ -353,7 +360,7 @@ private fun WeekDialogDayViewContentFooter(
     onEdit: () -> Unit
 ){
     Button(
-        shape = RoundedCornerShape(10.dp),
+        shape = RectangleShape,
         colors = ButtonDefaults.buttonColors(
             contentColor = MaterialTheme.colorScheme.background,
             containerColor = MaterialTheme.colorScheme.primary
@@ -369,7 +376,7 @@ private fun WeekDialogDayViewContentFooter(
                 blurRadius = 17.dp
             )
     ) {
-        Text(text = "РЕДАКТИРОВАТЬ", fontWeight = FontWeight.Bold)
+        Text(text = stringResource(R.string.week_day_view_edit_button), fontWeight = FontWeight.Bold)
     }
 }
 

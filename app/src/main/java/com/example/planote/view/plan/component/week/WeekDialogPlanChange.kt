@@ -34,7 +34,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -57,14 +56,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.planote.PreviewContainer
+import com.example.planote.R
+import com.example.planote.isLandscape
 import com.example.planote.viewModel.plan.PlanWeekDialogMode
 import com.example.planote.viewModel.plan.PlanWeekDialogPlanDataHolder
 import com.example.planote.viewModel.plan.PlanWeekDomain
@@ -97,18 +100,15 @@ private fun WeekDialogPlanChangeContent(
     onDismissClick: () -> Unit,
     onSelect: (PlanWeekDomain) -> Unit,
     onEdit: (PlanWeekDomain) -> Unit,
-    onDelete: (PlanWeekDomain) -> Unit,
     onAdd: () -> Unit,
     onSave: () -> Unit,
     onDeletePlan: (PlanWeekDomain) -> Unit,
     onDismissAlert: () -> Unit,
 ) {
-    var planDialogAlert by remember { mutableStateOf<WeekDialogPlanChangeAlert>(WeekDialogPlanChangeAlert.None) }
-
     WeekLoading(loading) {
         Column(
             verticalArrangement = Arrangement.spacedBy(15.dp),
-            modifier = Modifier.fillMaxSize().padding(25.dp),
+            modifier = Modifier.fillMaxSize().padding(if(!isLandscape()) 17.dp else 10.dp),
         ) {
             WeekDialogPlanAddContentHeader(
                 onDismissClick = onDismissClick,
@@ -123,10 +123,7 @@ private fun WeekDialogPlanChangeContent(
                     deletingWeekIds = deletingWeekIds,
                     onSelect = onSelect,
                     onEdit = onEdit,
-                    onDelete = { week ->
-                        planDialogAlert = WeekDialogPlanChangeAlert.DeletePlan(week)
-                        onDelete(week)
-                    },
+                    onDelete = onDeletePlan
                 )
             }
             WeekDialogPlanAddContentFooter(
@@ -134,12 +131,6 @@ private fun WeekDialogPlanChangeContent(
                 onSave = onSave,
             )
         }
-
-        WeekDialogPlanChangeAlertHandler(
-            planDialogAlert = planDialogAlert,
-            onDismiss = onDismissAlert,
-            onDeletePlan = onDeletePlan,
-        )
     }
 }
 
@@ -147,43 +138,39 @@ private fun WeekDialogPlanChangeContent(
 private fun WeekDialogPlanAddContentHeader(
     onDismissClick: () -> Unit
 ){
-    Box(
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth(),
-        contentAlignment = Alignment.Center
     ) {
-        IconButton(
-            onClick = { onDismissClick() },
-            modifier = Modifier.align(Alignment.CenterStart).size(18.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = "Закрыть",
-                tint = MaterialTheme.colorScheme.onSurface,
-            )
-        }
-        Text(
-            text = "ПЛАНЫ",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.align(Alignment.Center)
-        )
         Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .background(
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(10.dp)
-                )
-
+            modifier = Modifier.fillMaxWidth()
         ) {
+            IconButton(
+                onClick = { onDismissClick() },
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .size(24.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = stringResource(R.string.dialog_close),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(22.dp).padding(bottom = 4.dp)
+                )
+            }
             Text(
-                text = "VIEW",
-                fontSize = 11.sp,
+                text = stringResource(R.string.week_plan_plans),
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = 10.dp)
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.align(Alignment.Center)
+            )
+            Text(
+                text = "// VIEW",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                modifier = Modifier.align(Alignment.CenterEnd)
             )
         }
     }
@@ -224,12 +211,12 @@ private fun WeekDialogPlanItem(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RectangleShape)
                 .background(if(isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.05f) else MaterialTheme.colorScheme.surface)
                 .border(
                     width = 1.dp,
                     color = borderColor,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RectangleShape
                 )
                 .clickable { onSelect() }
                 .padding(horizontal = 16.dp, vertical = 12.dp)
@@ -244,10 +231,11 @@ private fun WeekDialogPlanItem(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
                         modifier = Modifier.weight(1f),
                     ) {
                         Text(
-                            text = week.title ?: "Без названия",
+                            text = week.title ?: stringResource(R.string.week_plan_no_title),
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface,
@@ -271,7 +259,7 @@ private fun WeekDialogPlanItem(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.EditNote,
-                                contentDescription = "Редактировать",
+                                contentDescription = stringResource(R.string.dialog_edit),
                                 tint = editIconColor,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -282,7 +270,7 @@ private fun WeekDialogPlanItem(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Delete,
-                                contentDescription = "Удалить",
+                                contentDescription = stringResource(R.string.dialog_delete),
                                 tint = deleteIconColor,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -304,10 +292,13 @@ private fun WeekDialogPlanAddContentBody(
     onDelete: (PlanWeekDomain) -> Unit
 ) {
     val listState = rememberLazyListState()
-    Column{
+    Column(
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier.fillMaxWidth()
+    ){
         Box(modifier = Modifier.fillMaxWidth()){
             Text(
-                text = "АКТИВНЫЕ ПЛАНЫ",
+                text = "${stringResource(R.string.week_plan_active_plans)} ${if(weeks.isEmpty()) stringResource(R.string.week_plan_empty) else ""}",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
@@ -344,14 +335,14 @@ private fun WeekDialogPlanAddContentBody(
                     visible = listState.canScrollForward,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(60.dp),
+                        .height(if(!isLandscape()) 50.dp else 15.dp),
                     enter = fadeIn(animationSpec = tween(150)),
                     exit = fadeOut(animationSpec = tween(150))
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(60.dp)
+                            .height(if(!isLandscape()) 50.dp else 15.dp)
                             .background(
                                 Brush.verticalGradient(
                                     colors = listOf(
@@ -379,26 +370,26 @@ private fun WeekDialogPlanAddContentFooter(
     ){
         OutlinedButton(
             onClick = onAdd,
-            shape = RoundedCornerShape(12.dp),
+            shape = RectangleShape,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
-            modifier = Modifier.fillMaxWidth().height(48.dp),
+            modifier = Modifier.fillMaxWidth().height(45.dp),
         ) {
             Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Добавить новый план")
+            Text(stringResource(R.string.week_plan_add_new))
         }
         Button(
             onClick = onSave,
-            shape = RoundedCornerShape(12.dp),
+            shape = RectangleShape,
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(55.dp)
+                .height(45.dp)
                 .shadowGlow(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f), offsetX = 0.dp, offsetY = 0.dp, blurRadius = 17.dp),
         ) {
             Text(
-                text = "СОХРАНИТЬ",
+                text = stringResource(R.string.dialog_save),
                 color = MaterialTheme.colorScheme.background,
                 fontWeight = FontWeight.Bold
             )
@@ -416,10 +407,10 @@ private fun WeekDialogPlanChangeAlertHandler(
         is WeekDialogPlanChangeAlert.DeletePlan -> {
             val week = planDialogAlert.week
             WeekAlert(
-                title = "Удалить план?",
-                description = "Этот план будет удален",
-                confirmText = "Удалить",
-                dismissText = "Отменить",
+                title = stringResource(R.string.week_plan_delete_title),
+                description = stringResource(R.string.week_plan_delete_desc),
+                confirmText = stringResource(R.string.dialog_delete),
+                dismissText = stringResource(R.string.dialog_cancel),
                 onConfirm = {
                     onDismiss()
                     onDeletePlan(week)
@@ -458,9 +449,6 @@ fun WeekDialogPlanChangeContent(
         onEdit = { week ->
             viewModel.loadEditWeek(week)
             dialogStateChange(PlanWeekDialogMode.PLANADD)
-        },
-        onDelete = { week ->
-            planDialogAlert = WeekDialogPlanChangeAlert.DeletePlan(week)
         },
         onAdd = {
             viewModel.loadEditWeek(PlanWeekDomain())
@@ -517,7 +505,6 @@ fun WeekDialogPlanChangeContentPreview(
                 onDismissClick = {},
                 onSelect = {},
                 onEdit = {},
-                onDelete = {},
                 onAdd = {},
                 onSave = {},
                 onDeletePlan = {},
